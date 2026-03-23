@@ -1,7 +1,7 @@
 -- Seed Data for Inmobiliaria Modelo Flash
 
 -- Roles
-INSERT INTO Roles (Name) VALUES ('Admin'), ('Usuario') ON CONFLICT (Name) DO NOTHING;
+INSERT INTO Roles (Name) VALUES ('Admin'), ('Usuario'), ('Vendedor') ON CONFLICT (Name) DO NOTHING;
 
 -- Plans
 INSERT INTO Plans (Name, MaxProperties, Price) VALUES ('Básico', 3, 0.00), ('Pro', 10, 19.99), ('Premium', 50, 49.99) ON CONFLICT DO NOTHING;
@@ -56,8 +56,8 @@ VALUES ('Test', 'User', 'miguelpinto.dev@gmail.com', '999888777', 3, 50)
 ON CONFLICT (Email) DO NOTHING;
 
 -- Sample Property
-INSERT INTO Properties (OwnerId, OperationType, Price, Area, LocationText, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status, IsFeatured)
-SELECT Id, 'Venta', 250000, 120, 'Miraflores, Lima', 3, 2, 1, 5, TRUE, 'Hermoso departamento con vista al mar.', 'Aprobada', TRUE
+INSERT INTO Properties (OwnerId, OperationType, PropertyType, Price, Area, LocationText, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status, IsFeatured)
+SELECT Id, 'Venta', 'Departamento', 250000, 120, 'Miraflores, Lima', 3, 2, 1, 5, TRUE, 'Hermoso departamento con vista al mar.', 'Aprobada', TRUE
 FROM Users WHERE Email = 'miguelpinto.dev@gmail.com'
 LIMIT 1;
 

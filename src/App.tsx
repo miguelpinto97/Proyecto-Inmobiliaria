@@ -18,15 +18,28 @@ const Navigation = ({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boo
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+  const isSeller = user?.roles?.includes('Vendedor');
+  const isAdmin = user?.roles?.includes('Admin');
+
+  let navItems = [
     { path: '/propiedades', label: 'Explorar', icon: Search },
-    { path: '/propiedades/nueva', label: 'Publicar', icon: Building },
-    { path: '/busquedas/nueva', label: 'Mi Búsqueda', icon: Search },
   ];
 
-  if (user?.roles?.includes('Admin')) {
+  if (user && (isSeller || isAdmin)) {
+    navItems = [
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
+      { path: '/propiedades', label: 'Explorar', icon: Search },
+      { path: '/propiedades/nueva', label: 'Publicar', icon: Building },
+      { path: '/busquedas/nueva', label: 'Mi Búsqueda', icon: Search },
+    ];
+  }
+
+  if (isAdmin) {
     navItems.push({ path: '/admin', label: 'Admin', icon: ShieldCheck });
+  }
+
+  if (user && !isSeller && !isAdmin) {
+    navItems.push({ path: '/perfil', label: 'Ser Vendedor', icon: Building });
   }
 
   return (
@@ -47,10 +60,10 @@ const Navigation = ({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boo
       `}>
         <div>
           <div className="mb-8 p-2 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <Link to="/" className="text-xl font-bold text-white flex items-center gap-3">
               <Building className="w-8 h-8 text-blue-500" />
               {(!collapsed || isOpen) && <span className="tracking-tight">Modelo Flash</span>}
-            </h2>
+            </Link>
             <button onClick={() => setCollapsed(!collapsed)} className="text-slate-400 hover:text-white hidden md:block">
               {collapsed ? "→" : "←"}
             </button>
@@ -81,20 +94,32 @@ const Navigation = ({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boo
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-800/50 transition-colors rounded-xl" onClick={logout}>
-          <div className="flex gap-3 items-center overflow-hidden">
-             <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-               <UserIcon className="w-5 h-5" />
-             </div>
-             {(!collapsed || isOpen) && (
-               <div className="overflow-hidden">
-                 <p className="text-sm font-medium text-white truncate">{user?.firstname}</p>
-                 <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+        {user ? (
+          <div className="p-4 border-t border-slate-800 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-800/50 transition-colors rounded-xl" onClick={logout}>
+            <div className="flex gap-3 items-center overflow-hidden">
+               <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                 <UserIcon className="w-5 h-5" />
                </div>
-             )}
+               {(!collapsed || isOpen) && (
+                 <div className="overflow-hidden">
+                   <p className="text-sm font-medium text-white truncate">{user?.firstname}</p>
+                   <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                 </div>
+               )}
+            </div>
+            <LogOut className="w-4 h-4 text-slate-400 hover:text-red-400 transition-colors" />
           </div>
-          <LogOut className="w-4 h-4 text-slate-400 hover:text-red-400 transition-colors" />
-        </div>
+        ) : (
+          <div className="p-4 border-t border-slate-800">
+            <Link 
+              to="/" 
+              className={`flex items-center ${collapsed ? "md:justify-center" : "space-x-3"} px-4 py-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-all`}
+            >
+              <UserIcon className="w-5 h-5" />
+              {(!collapsed || isOpen) && <span>Iniciar Sesión</span>}
+            </Link>
+          </div>
+        )}
       </nav>
     </>
   );
@@ -118,9 +143,11 @@ const MainAppLayout = () => {
     return <Home />;
   }
 
-  // If logged in and on home, redirect to dashboard
+  // If logged in and on home, redirect to dashboard or properties
   if (user && location.pathname === '/') {
-    return <Navigate to="/dashboard" />;
+    const isSeller = user.roles.includes('Vendedor');
+    const isAdmin = user.roles.includes('Admin');
+    return <Navigate to={isSeller || isAdmin ? "/dashboard" : "/propiedades"} />;
   }
 
   return (

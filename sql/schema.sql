@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS Properties (
     FloorNumber INTEGER,
     HasElevator BOOLEAN DEFAULT FALSE,
     Description TEXT,
+    PropertyType VARCHAR(50),
     Status VARCHAR(20) DEFAULT 'Pendiente', -- 'Pendiente', 'Aprobada', 'Rechazada'
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

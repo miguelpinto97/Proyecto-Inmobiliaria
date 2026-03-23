@@ -33,6 +33,21 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    if (event.httpMethod === 'POST') {
+      const { upgrade } = JSON.parse(event.body || '{}');
+      if (upgrade === 'Vendedor') {
+        const roleResult = await query('SELECT Id FROM Roles WHERE Name = $1', ['Vendedor']);
+        const roleId = roleResult.rows[0].id;
+        await query('INSERT INTO UserRoles (UserId, RoleId) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user.userId, roleId]);
+        
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'Upgraded to Vendedor' }),
+        };
+      }
+    }
+
     return { statusCode: 405, body: 'Method Not Allowed' };
   } catch (error) {
     console.error('User Profile Error:', error);

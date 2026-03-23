@@ -12,7 +12,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const { idToken } = JSON.parse(event.body || '{}');
+    const { idToken, requestedRole } = JSON.parse(event.body || '{}');
     if (!idToken) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing ID Token' }) };
     }
@@ -44,11 +44,20 @@ export const handler: Handler = async (event) => {
 
       // Assign role (Admin if email matches)
       const isAdmin = email === 'miguelpinto.dev@gmail.com';
-      const roleName = isAdmin ? 'Admin' : 'Usuario';
+      const roleName = isAdmin ? 'Admin' : (requestedRole === 'Vendedor' ? 'Vendedor' : 'Usuario');
       const roleResult = await query('SELECT Id FROM Roles WHERE Name = $1', [roleName]);
       const roleId = roleResult.rows[0].id;
 
       await query('INSERT INTO UserRoles (UserId, RoleId) VALUES ($1, $2)', [user.id, roleId]);
+      
+      // If Vendedor, ensure they also have Usuario role? Or just Vendedor? 
+      // User says: "Unicamente los que entren a través del Call to Action de Vendedor tendrán el rol de 'Vendedor'"
+      // So if requestedRole is Vendedor, they get Vendedor.
+    } else if (requestedRole === 'Vendedor') {
+      // If user exists but is not Vendedor, upgrade them
+      const roleResult = await query('SELECT Id FROM Roles WHERE Name = $1', ['Vendedor']);
+      const roleId = roleResult.rows[0].id;
+      await query('INSERT INTO UserRoles (UserId, RoleId) VALUES ($1, $2) ON CONFLICT DO NOTHING', [user.id, roleId]);
     }
 
     const rolesResult = await query(

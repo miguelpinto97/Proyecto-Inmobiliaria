@@ -13,7 +13,7 @@ api.interceptors.request.use((config) => {
 });
 
 export const authService = {
-  loginWithGoogle: (idToken: string) => api.post('/auth-google', { idToken }),
+  loginWithGoogle: (idToken: string, role?: string) => api.post('/auth-google', { idToken, requestedRole: role }),
 };
 
 export const propertyService = {
@@ -28,6 +28,7 @@ export const propertyService = {
 export const userService = {
   getProfile: () => api.get('/user-profile'),
   updateProfile: (data: any) => api.put('/user-profile', data),
+  upgradeToSeller: () => api.post('/user-profile', { upgrade: 'Vendedor' }),
 };
 
 export const commonService = {

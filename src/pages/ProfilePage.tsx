@@ -144,6 +144,28 @@ const ProfilePage: React.FC = () => {
           Guardar Cambios
         </button>
       </form>
+
+      {user && !user.roles.includes('Vendedor') && (
+        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white space-y-4 shadow-xl shadow-blue-200 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-all"></div>
+          <h3 className="text-2xl font-black tracking-tight">¿Quieres vender tus propiedades?</h3>
+          <p className="text-blue-100 font-medium">Actualiza tu cuenta a un perfil de Vendedor para empezar a publicar tus inmuebles hoy mismo.</p>
+          <button 
+            onClick={async () => {
+              try {
+                await userService.upgradeToSeller();
+                await refreshUser();
+                alert('¡Felicidades! Ahora eres Vendedor.');
+              } catch (e) {
+                alert('Error al actualizar rol.');
+              }
+            }}
+            className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black hover:bg-blue-50 transition-all"
+          >
+            Quiero ser Vendedor
+          </button>
+        </div>
+      )}
     </div>
   );
 };

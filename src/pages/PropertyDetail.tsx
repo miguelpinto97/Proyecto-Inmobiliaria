@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { propertyService } from '../services/api';
-import { MapPin, Maximize, Bath, Bed, Info, CheckCircle2 } from 'lucide-react';
+import { MapPin, Maximize, Bath, Bed, Info, CheckCircle2, Phone, ChevronLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
+import { useCommonValues } from '../hooks/useCommonValues';
 
 const PropertyDetail: React.FC = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user, loginWithGoogle } = useAuth();
+  const { values } = useCommonValues();
   const [property, setProperty] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mainImage, setMainImage] = useState('');
@@ -24,23 +30,35 @@ const PropertyDetail: React.FC = () => {
     fetchDoc();
   }, [id]);
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center">Cargando...</div>;
+  if (isLoading) return <div className="h-screen flex items-center justify-center text-blue-500 font-bold">Cargando...</div>;
   if (!property) return <div className="container py-24 text-center text-3xl font-bold">Propiedad no encontrada</div>;
 
   return (
-    <div className="container py-12 flex flex-col gap-12">
+    <div className="max-w-7xl mx-auto px-4 py-12 flex flex-col gap-12 animate-fade-in">
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate('/propiedades')}
+        className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-black transition-all w-fit group"
+      >
+        <div className="p-2 bg-white rounded-full shadow-sm group-hover:shadow-md transition-all">
+          <ChevronLeft size={20} />
+        </div>
+        Volver al Catálogo
+      </button>
+
       {/* Header & Gallery */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 flex flex-col gap-6">
-          <div className="rounded-3xl overflow-hidden shadow-lg h-[500px] border-4 border-white">
+          <div className="rounded-[3rem] overflow-hidden shadow-2xl h-[500px] border-4 border-white relative group">
             <img src={mainImage || 'https://via.placeholder.com/800x500'} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
             {property.images?.map((img: any, idx: number) => (
               <img 
                 key={idx} 
                 src={img.imageurl} 
-                className={`w-24 h-24 object-cover rounded-xl cursor-pointer border-2 transition-all ${mainImage === img.imageurl ? 'border-primary' : 'border-transparent opacity-70 hover:opacity-100'}`} 
+                className={`w-28 h-28 object-cover rounded-3xl cursor-pointer border-4 transition-all shrink-0 ${mainImage === img.imageurl ? 'border-blue-600 shadow-lg' : 'border-white opacity-70 hover:opacity-100 shadow-sm'}`} 
                 onClick={() => setMainImage(img.imageurl)}
               />
             ))}
@@ -49,58 +67,124 @@ const PropertyDetail: React.FC = () => {
 
         {/* Info Card */}
         <div className="flex flex-col gap-8">
-           <div className="glass p-8 rounded-3xl shadow-xl flex flex-col gap-6">
-              <div className="flex justify-between items-start">
-                <span className={`px-4 py-1 rounded-full text-xs font-bold uppercase ${property.operationtype === 'Venta' ? 'bg-primary text-white' : 'bg-accent text-white'}`}>
+          <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-50 flex flex-col gap-8">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-2">
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${property.operationtype === 'Venta' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
                   {property.operationtype}
                 </span>
-                <span className="text-sm text-text-muted">Publicado hace 2 días</span>
+                {property.propertytype && (
+                  <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 shadow-sm">
+                    {property.propertytype}
+                  </span>
+                )}
               </div>
-              
-              <h1 className="text-4xl font-extrabold text-text-main">${Number(property.price).toLocaleString()}</h1>
-              
-              <div className="flex items-center gap-2 text-text-muted">
-                <MapPin className="text-primary shrink-0" size={20} />
-                <span className="font-medium">{property.locationtext}</span>
+              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Hace 2 días</span>
+            </div>
+            
+            <h1 className="text-5xl font-black text-slate-900 leading-none tracking-tight">
+              S/ {Number(property.price).toLocaleString()}
+            </h1>
+            
+            <div className="flex items-center justify-between gap-4 p-5 bg-slate-50 rounded-3xl border border-slate-100">
+              <div className="flex items-center gap-3">
+                <MapPin className="text-blue-500 shrink-0" size={20} />
+                <span className="font-bold text-slate-600 text-sm leading-tight">
+                  {values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}
+                  {property.isaddresspublic !== false 
+                    ? `, ${property.address}${property.reference ? ` (${property.reference})` : ''}` 
+                    : ` - ${property.reference || 'Dirección Reservada'}`}
+                </span>
               </div>
+              <a 
+                href={property.latitude && property.longitude 
+                  ? `https://www.google.com/maps?q=loc:${parseFloat(String(property.latitude))},${parseFloat(String(property.longitude))}`
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}, Lima, Peru`)}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white p-3 rounded-2xl text-blue-600 shadow-sm hover:shadow-md transition-all group/map"
+                title="Abrir en Google Maps"
+              >
+                <MapPin size={20} className="group-hover/map:scale-110 transition-transform" />
+              </a>
+            </div>
 
-              <div className="grid grid-cols-3 gap-4 border-y border-border py-6 my-2">
-                <div className="flex flex-col items-center gap-1">
-                  <Maximize size={24} className="text-secondary" />
-                  <span className="text-sm font-bold">{property.area} m²</span>
+            <div className="grid grid-cols-3 gap-4 border-y border-slate-50 py-8">
+              <div className="flex flex-col items-center gap-1.5">
+                <Maximize size={24} className="text-slate-300" />
+                <span className="text-sm font-black text-slate-900">{property.area} m²</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 border-x border-slate-50">
+                <Bed size={24} className="text-slate-300" />
+                <span className="text-sm font-black text-slate-900">{property.rooms}</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <Bath size={24} className="text-slate-300" />
+                <span className="text-sm font-black text-slate-900">{property.bathrooms}</span>
+              </div>
+            </div>
+
+            {user ? (
+              <button 
+                onClick={() => alert('¡Mensaje enviado al vendedor! En breve se contactarán contigo.')}
+                className="bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3"
+              >
+                <Phone size={22} />
+                Contactar Vendedor
+              </button>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                  <p className="text-xs font-bold text-blue-600 text-center uppercase tracking-wider">Inicia sesión para contactar</p>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Bed size={24} className="text-secondary" />
-                  <span className="text-sm font-bold">{property.rooms}</span>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <Bath size={24} className="text-secondary" />
-                  <span className="text-sm font-bold">{property.bathrooms}</span>
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={(res) => loginWithGoogle(res.credential || '')}
+                    onError={() => alert('Fallo inicio de sesión')}
+                    theme="filled_blue"
+                    shape="pill"
+                    size="large"
+                    text="continue_with"
+                  />
                 </div>
               </div>
+            )}
+          </div>
 
-              <button className="btn btn-primary py-4 w-full text-lg">Contactar Vendedor</button>
-              <button className="btn btn-outline py-4 w-full">Agendar Visita</button>
-           </div>
-
-           {/* Features area placeholder */}
-           <div className="bg-surface p-8 rounded-3xl border border-border flex flex-col gap-4">
-              <h3 className="font-bold text-xl flex items-center gap-2"><Info size={20} /> Características</h3>
-              <ul className="grid grid-cols-1 gap-3">
-                <li className="flex items-center gap-2 text-text-muted"><CheckCircle2 size={18} className="text-success" /> {property.parkingspots} Estacionamiento(s)</li>
-                <li className="flex items-center gap-2 text-text-muted"><CheckCircle2 size={18} className="text-success" /> Piso: {property.floornumber}</li>
-                {property.haselevator && <li className="flex items-center gap-2 text-text-muted"><CheckCircle2 size={18} className="text-success" /> Cuenta con Ascensor</li>}
-              </ul>
-           </div>
+          <div className="bg-slate-900 p-8 rounded-[3rem] text-white space-y-4">
+             <h3 className="font-black text-xl flex items-center gap-2 tracking-tight">
+               <Info size={20} className="text-blue-400" /> 
+               Características
+             </h3>
+             <ul className="space-y-3">
+               <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
+                 <CheckCircle2 size={18} className="text-blue-400" /> 
+                 {property.parkingspots} Estacionamiento(s)
+               </li>
+               <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
+                 <CheckCircle2 size={18} className="text-blue-400" /> 
+                 Piso: {property.floornumber}
+               </li>
+               {property.haselevator && (
+                 <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
+                   <CheckCircle2 size={18} className="text-blue-400" /> 
+                   Cuenta con Ascensor
+                 </li>
+               )}
+             </ul>
+          </div>
         </div>
       </div>
 
       {/* Description */}
-      <div className="max-w-4xl flex flex-col gap-6">
-        <h2 className="text-3xl font-extrabold">Descripción</h2>
-        <p className="text-lg text-text-muted leading-relaxed whitespace-pre-wrap">
-          {property.description || 'Sin descripción disponible.'}
-        </p>
+      <div className="max-w-4xl space-y-6">
+        <h2 className="text-4xl font-black text-slate-900 tracking-tight">Descripción</h2>
+        <div className="bg-white p-10 rounded-[3rem] border border-slate-50 shadow-sm">
+          <p className="text-lg text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">
+            {property.description || 'Sin descripción disponible.'}
+          </p>
+        </div>
       </div>
     </div>
   );

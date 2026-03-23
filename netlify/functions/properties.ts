@@ -50,8 +50,9 @@ export const handler: Handler = async (event) => {
 
         // Apply filters
         if (opType) {
-          sql += ' AND p.OperationType = $' + (params.length + 1);
-          params.push(opType);
+          const types = opType.split(',');
+          sql += ' AND p.OperationType = ANY($' + (params.length + 1) + ')';
+          params.push(types);
         }
         if (propertyType) {
           sql += ' AND p.PropertyType = $' + (params.length + 1);
@@ -97,9 +98,9 @@ export const handler: Handler = async (event) => {
     if (method === 'POST') {
       const body = JSON.parse(event.body || '{}');
       const { 
-        operationType, price, area, district, address, 
+        operationType, propertyType, price, area, district, address, 
         rooms, bathrooms, parkingSpots, floorNumber, hasElevator, 
-        description, images 
+        description, images, latitude, longitude, isAddressPublic, reference 
       } = body;
 
       // Profile completeness check (Fetch from DB for latest data)
@@ -122,9 +123,9 @@ export const handler: Handler = async (event) => {
       }
 
       const result = await query(
-        `INSERT INTO Properties (OwnerId, OperationType, Price, Area, District, Address, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'Pendiente') RETURNING *`,
-        [user.userId, operationType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description]
+        `INSERT INTO Properties (OwnerId, OperationType, PropertyType, Price, Area, District, Address, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status, Latitude, Longitude, IsAddressPublic, Reference)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'Pendiente', $14, $15, $16, $17) RETURNING *`,
+        [user.userId, operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference]
       );
 
       const propertyId = result.rows[0].id;
@@ -158,11 +159,11 @@ export const handler: Handler = async (event) => {
       if (isAdmin(user) && body.status) {
         await query('UPDATE Properties SET Status = $1, UpdatedAt = CURRENT_TIMESTAMP WHERE Id = $2', [body.status, id]);
       } else {
-        const { operationType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, images } = body;
+        const { operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, images, latitude, longitude, isAddressPublic, reference } = body;
         await query(
-          `UPDATE Properties SET OperationType = $1, Price = $2, Area = $3, District = $4, Address = $5, Rooms = $6, Bathrooms = $7, ParkingSpots = $8, FloorNumber = $9, HasElevator = $10, Description = $11, Status = 'Pendiente', UpdatedAt = CURRENT_TIMESTAMP
-           WHERE Id = $12`,
-          [operationType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, id]
+          `UPDATE Properties SET OperationType = $1, PropertyType = $2, Price = $3, Area = $4, District = $5, Address = $6, Rooms = $7, Bathrooms = $8, ParkingSpots = $9, FloorNumber = $10, HasElevator = $11, Description = $12, Status = 'Pendiente', Latitude = $13, Longitude = $14, IsAddressPublic = $15, Reference = $16, UpdatedAt = CURRENT_TIMESTAMP
+           WHERE Id = $17`,
+          [operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference, id]
         );
 
         if (images && Array.isArray(images)) {

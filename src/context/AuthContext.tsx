@@ -18,7 +18,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, userData: User) => void;
   logout: () => void;
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (idToken: string, role?: string) => Promise<void>;
   isLoading: boolean;
   isProfileComplete: () => boolean;
   refreshUser: () => Promise<void>;
@@ -81,10 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
   };
 
-  const loginWithGoogle = async (idToken: string) => {
+  const loginWithGoogle = async (idToken: string, role?: string) => {
     const { authService } = await import('../services/api');
     try {
-      const res = await authService.loginWithGoogle(idToken);
+      const res = await authService.loginWithGoogle(idToken, role);
       const { token: newToken, user: userData } = res.data;
       login(newToken, userData);
     } catch (err) {
