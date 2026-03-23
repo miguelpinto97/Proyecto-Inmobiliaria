@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import { MapPin } from 'lucide-react';
+import { MapPin, Search, X, Loader2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -61,6 +61,34 @@ const MapPicker: React.FC<MapPickerProps> = ({ value, onChange, defaultCenter = 
     value ? [value.lat, value.lng] : null
   );
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Search logic
+  useEffect(() => {
+    if (searchQuery.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&countrycodes=pe&limit=5`);
+        const data = await res.json();
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } catch (err) {
+        console.error('Search error:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const handleGeocode = async (lat: number, lng: number) => {
     setIsGeocoding(true);
@@ -109,8 +137,66 @@ const MapPicker: React.FC<MapPickerProps> = ({ value, onChange, defaultCenter = 
   };
 
   return (
-    <div className="h-[380px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative z-0 flex flex-col">
-      <div className="flex-1 relative">
+    <div className="h-full w-full relative z-0 flex flex-col bg-white">
+      {/* Ultra-Minimal Search Header */}
+      <div className="px-4 py-2 bg-white border-b border-slate-50 flex justify-center shrink-0 relative z-[1001]">
+        <div className="w-full max-w-sm relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={14} />
+          <input 
+            type="text"
+            className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-100 bg-slate-50 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm"
+            placeholder="Buscar dirección..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => searchQuery.length >= 3 && setShowSuggestions(true)}
+          />
+          {searchQuery && (
+            <button 
+              onClick={() => { setSearchQuery(''); setSuggestions([]); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X size={14} />
+            </button>
+          )}
+
+          {/* Suggestions Dropdown (Compact) */}
+          {showSuggestions && (suggestions.length > 0 || isSearching) && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200 z-[1002]">
+              {isSearching ? (
+                <div className="p-3 flex items-center justify-center gap-2 text-slate-400 font-bold text-[10px] uppercase">
+                  <Loader2 className="animate-spin" size={12} />
+                  Buscando...
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-50 max-h-[180px] overflow-y-auto">
+                  {suggestions.map((s, idx) => (
+                    <button
+                      key={idx}
+                      className="w-full p-2.5 text-left hover:bg-slate-50 transition-colors flex items-start gap-2 group"
+                      onClick={() => {
+                        const lat = parseFloat(s.lat);
+                        const lng = parseFloat(s.lon);
+                        setPosition([lat, lng]);
+                        setShowSuggestions(false);
+                        setSearchQuery(s.display_name);
+                        handleGeocode(lat, lng);
+                      }}
+                    >
+                      <MapPin size={14} className="text-slate-300 group-hover:text-blue-500 shrink-0 mt-0.5" />
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-[11px] font-bold text-slate-700 truncate">{s.display_name.split(',')[0]}</span>
+                        <span className="text-[9px] font-medium text-slate-400 truncate">{s.display_name}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex-1 relative overflow-hidden">
         <MapContainer
           center={position || defaultCenter}
           zoom={13}
@@ -125,25 +211,20 @@ const MapPicker: React.FC<MapPickerProps> = ({ value, onChange, defaultCenter = 
         </MapContainer>
 
         {isGeocoding && (
-          <div className="absolute inset-0 z-[1000] bg-white/40 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-300">
-            <div className="bg-white/90 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border border-blue-50">
-              <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-blue-600 font-black text-xs uppercase tracking-widest">Obteniendo dirección...</span>
+          <div className="absolute inset-0 z-[1000] bg-white/30 backdrop-blur-[1px] flex items-center justify-center animate-in fade-in duration-300">
+            <div className="bg-white/90 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-3 border border-blue-50">
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-blue-600 font-black text-[10px] uppercase tracking-widest">Sincronizando</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="bg-slate-50 p-4 border-t border-slate-100 flex flex-col gap-1 items-center justify-center shrink-0">
-        <div className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest">
-          <MapPin size={12} className={isGeocoding ? 'animate-bounce text-blue-500' : ''} />
-          <span>{isGeocoding ? 'Sincronizando...' : 'Haz clic para ubicar la propiedad'}</span>
+      <div className="bg-slate-50 p-2 border-t border-slate-100 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-2 text-slate-400 font-black text-[9px] uppercase tracking-tighter opacity-60">
+          <MapPin size={10} className={isGeocoding ? 'animate-bounce text-blue-500' : ''} />
+          <span>{isGeocoding ? 'Espere...' : 'Arrastre el PIN para precisar'}</span>
         </div>
-        {!isGeocoding && (
-          <span className="text-blue-500 lowercase italic normal-case font-bold tracking-tight text-[11px] opacity-70 text-center">
-            La dirección y el número se detectarán automáticamente.<br></br>De no ser así, puedes agregar el número manualmente.
-          </span>
-        )}
       </div>
     </div>
   );
