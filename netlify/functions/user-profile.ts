@@ -1,0 +1,41 @@
+import { Handler } from '@netlify/functions';
+import { query } from './utils/db';
+import { verifyToken } from './utils/authMiddleware';
+
+export const handler: Handler = async (event) => {
+  const user = verifyToken(event);
+  if (!user) return { statusCode: 401, body: 'Unauthorized' };
+
+  try {
+    if (event.httpMethod === 'GET') {
+      const result = await query('SELECT * FROM Users WHERE Id = $1', [user.userId]);
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result.rows[0]),
+      };
+    }
+
+    if (event.httpMethod === 'PUT') {
+      const { firstName, lastName, phone, address, district } = JSON.parse(event.body || '{}');
+      
+      const result = await query(
+        `UPDATE Users SET 
+          FirstName = $1, LastName = $2, Phone = $3, Address = $4, District = $5, UpdatedAt = CURRENT_TIMESTAMP
+         WHERE Id = $6 RETURNING *`,
+        [firstName, lastName, phone, address, district, user.userId]
+      );
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result.rows[0]),
+      };
+    }
+
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  } catch (error) {
+    console.error('User Profile Error:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error' }) };
+  }
+};
