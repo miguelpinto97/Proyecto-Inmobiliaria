@@ -13,24 +13,53 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [propsRes, reqsRes] = await Promise.all([
+        propertyService.getMyProperties(),
+        requirementService.getMyRequirements(),
+      ]);
+      setProperties(propsRes.data);
+      setRequirements(reqsRes.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [propsRes, reqsRes] = await Promise.all([
-          propertyService.getMyProperties(),
-          requirementService.getMyRequirements(),
-        ]);
-        setProperties(propsRes.data);
-        setRequirements(reqsRes.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
+
+  const handleEdit = (id: number) => {
+    navigate(`/propiedades/editar/${id}`);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta propiedad? Esta acción no se puede deshacer.')) {
+      try {
+        await propertyService.delete(String(id));
+        fetchData();
+      } catch (err) {
+        console.error(err);
+        alert('Error al eliminar la propiedad');
+      }
+    }
+  };
+
+  const handleStatusChange = async (id: number, status: string) => {
+    if (window.confirm(`¿Estás seguro de que deseas marcar esta propiedad como ${status.toLowerCase()}?`)) {
+      try {
+        await propertyService.update(String(id), { status });
+        fetchData();
+      } catch (err: any) {
+        console.error(err);
+        alert(err.response?.data?.error || `Error al marcar como ${status.toLowerCase()}`);
+      }
+    }
+  };
 
   const handlePublishClick = () => {
     if (!isProfileComplete()) {
@@ -81,7 +110,7 @@ const Dashboard: React.FC = () => {
         <>
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 interactive-card">
               <div className="flex items-center space-x-4 text-blue-600 mb-4">
                 <div className="p-3 bg-blue-50 rounded-2xl"><Building className="w-6 h-6" /></div>
                 <span className="font-bold text-lg">Mis Listados</span>
@@ -90,7 +119,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-slate-500 mt-2 font-medium">Propiedades publicadas por ti.</p>
             </div>
 
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 interactive-card">
               <div className="flex items-center space-x-4 text-emerald-600 mb-4">
                 <div className="p-3 bg-emerald-50 rounded-2xl"><Search className="w-6 h-6" /></div>
                 <span className="font-bold text-lg">Mis Búsquedas</span>
@@ -99,7 +128,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-slate-500 mt-2 font-medium">Requerimientos activos de compra/alquiler.</p>
             </div>
 
-            <div className="bg-blue-600 text-white p-6 rounded-3xl shadow-xl shadow-blue-500/20 flex flex-col justify-center relative overflow-hidden group">
+            <div className="bg-blue-600 text-white p-6 rounded-3xl shadow-xl shadow-blue-500/20 flex flex-col justify-center relative overflow-hidden group interactive-card no-press">
               <div className="relative z-10">
                 <div className="flex items-center space-x-3 text-white/90 mb-2">
                   <Target className="w-5 h-5" />
@@ -126,7 +155,13 @@ const Dashboard: React.FC = () => {
               <div className="grid grid-cols-1 gap-4">
                 {properties.map(p => (
                   <div key={p.id}>
-                    <PropertyCard property={p} showStatus={true} />
+                    <PropertyCard 
+                      property={p} 
+                      showStatus={true} 
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onStatusChange={handleStatusChange}
+                    />
                   </div>
                 ))}
                 {properties.length === 0 && (
@@ -154,7 +189,7 @@ const Dashboard: React.FC = () => {
 
               <div className="space-y-4">
                 {requirements.map(r => (
-                  <div key={r.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer group" onClick={() => navigate(`/matching/${r.id}`)}>
+                  <div key={r.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer group interactive-card" onClick={() => navigate(`/matching/${r.id}`)}>
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-slate-800 flex items-center gap-2">
                         <Target className="w-4 h-4 text-emerald-500" />

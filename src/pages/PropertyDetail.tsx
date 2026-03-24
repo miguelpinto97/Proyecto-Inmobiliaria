@@ -38,7 +38,7 @@ const PropertyDetail: React.FC = () => {
       {/* Back Button */}
       <button 
         onClick={() => navigate('/propiedades')}
-        className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-black transition-all w-fit group"
+        className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-black transition-all w-fit group interactive-icon"
       >
         <div className="p-2 bg-white rounded-full shadow-sm group-hover:shadow-md transition-all">
           <ChevronLeft size={20} />
@@ -58,7 +58,7 @@ const PropertyDetail: React.FC = () => {
               <img 
                 key={idx} 
                 src={img.imageurl} 
-                className={`w-28 h-28 object-cover rounded-3xl cursor-pointer border-4 transition-all shrink-0 ${mainImage === img.imageurl ? 'border-blue-600 shadow-lg' : 'border-white opacity-70 hover:opacity-100 shadow-sm'}`} 
+                className={`w-28 h-28 object-cover rounded-3xl cursor-pointer border-4 transition-all shrink-0 hover:scale-105 active:scale-95 ${mainImage === img.imageurl ? 'border-blue-600 shadow-lg' : 'border-white opacity-70 hover:opacity-100 shadow-sm'}`} 
                 onClick={() => setMainImage(img.imageurl)}
               />
             ))}
@@ -103,7 +103,7 @@ const PropertyDetail: React.FC = () => {
                 }
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white p-3 rounded-2xl text-blue-600 shadow-sm hover:shadow-md transition-all group/map"
+                className="bg-white p-3 rounded-2xl text-blue-600 shadow-sm hover:shadow-md transition-all group/map interactive-icon"
                 title="Abrir en Google Maps"
               >
                 <MapPin size={20} className="group-hover/map:scale-110 transition-transform" />
@@ -128,7 +128,7 @@ const PropertyDetail: React.FC = () => {
             {user ? (
               <button 
                 onClick={() => alert('¡Mensaje enviado al vendedor! En breve se contactarán contigo.')}
-                className="bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3"
+                className="bg-blue-600 text-white py-5 rounded-2xl font-black text-lg hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-500/20 active:scale-95 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3"
               >
                 <Phone size={22} />
                 Contactar Vendedor

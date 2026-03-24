@@ -1,15 +1,28 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
+import { updateLoadingState } from '../context/LoadingContext';
 
 const api = axios.create({
   baseURL: '/api',
 });
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  updateLoadingState(1);
   const token = localStorage.getItem('token');
-  if (token) {
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  updateLoadingState(-1);
+  return Promise.reject(error);
+});
+
+api.interceptors.response.use((response: AxiosResponse) => {
+  updateLoadingState(-1);
+  return response;
+}, (error) => {
+  updateLoadingState(-1);
+  return Promise.reject(error);
 });
 
 export const authService = {

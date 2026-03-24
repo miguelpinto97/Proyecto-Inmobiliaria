@@ -20,12 +20,33 @@ export const handler: Handler = async (event) => {
 
     if (method === 'POST') {
       const body = JSON.parse(event.body || '{}');
-      const { operationType, minPrice, maxPrice, minArea, parkingRequired, floorPreference, elevatorRequired, minRooms, minBathrooms, hasSala, hasComedor } = body;
+      const { 
+        operationType, 
+        propertyType,
+        minPrice, 
+        maxPrice, 
+        minArea, 
+        parkingRequired, 
+        floorPreference, 
+        elevatorRequired, 
+        minRooms, 
+        minBathrooms, 
+        hasSala, 
+        hasComedor 
+      } = body;
 
       const result = await query(
-        `INSERT INTO BuyerRequirements (UserId, OperationType, MinPrice, MaxPrice, MinArea, ParkingRequired, FloorPreference, ElevatorRequired, MinRooms, MinBathrooms, HasSala, HasComedor)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-        [user.userId, operationType, minPrice, maxPrice, minArea, parkingRequired, floorPreference, elevatorRequired, minRooms, minBathrooms, hasSala, hasComedor]
+        `INSERT INTO BuyerRequirements (
+          UserId, OperationType, PropertyType, MinPrice, MaxPrice, MinArea, 
+          ParkingRequired, FloorPreference, ElevatorRequired, MinRooms, 
+          MinBathrooms, HasSala, HasComedor
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        [
+          user.userId, operationType, propertyType, minPrice, maxPrice, minArea, 
+          parkingRequired, floorPreference, elevatorRequired, minRooms, 
+          minBathrooms, hasSala, hasComedor
+        ]
       );
 
       // Trigger Matching calculation (Logic could be in a separate service or here)

@@ -150,7 +150,7 @@ const PropertyList: React.FC = () => {
         <div className="flex gap-4 w-full md:w-auto">
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="bg-slate-900 text-white p-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 px-5"
+            className="bg-slate-900 text-white p-2.5 rounded-xl hover:bg-black hover:shadow-2xl hover:shadow-slate-300 hover:-translate-y-0.5 active:scale-95 transition-all shadow-xl shadow-slate-200 flex items-center gap-2 px-5"
           >
             <SlidersHorizontal size={18} />
             <span className="font-bold text-sm">Filtros</span>
@@ -176,7 +176,7 @@ const PropertyList: React.FC = () => {
             <Filter size={20} className="text-blue-600" />
             Filtros
           </h2>
-          <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+          <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-all interactive-icon text-slate-400">
             <X size={20} />
           </button>
         </div>
@@ -196,6 +196,7 @@ const PropertyList: React.FC = () => {
                       ${isActive
                         ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}
+                      active:scale-95
                     `}
                   >
                     {v.descripcion}
@@ -235,7 +236,7 @@ const PropertyList: React.FC = () => {
               <input
                 type="text"
                 placeholder="Buscar distrito..."
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
                 value={filters.district ? (values?.Distrito?.find((d: any) => d.codigo === filters.district)?.descripcion || '') : ''}
                 readOnly
                 onClick={(e) => {
@@ -276,7 +277,7 @@ const PropertyList: React.FC = () => {
                         setFilters({ ...filters, district: v.codigo });
                         document.querySelectorAll('.group\\/district div.absolute').forEach(el => el.classList.add('hidden'));
                       }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all active:scale-[0.98]"
                     >
                       {v.descripcion}
                     </button>
@@ -323,7 +324,7 @@ const PropertyList: React.FC = () => {
         <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
           <button
             onClick={fetchProperties}
-            className="w-full bg-blue-600 text-white font-black py-2 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-xs"
+            className="w-full bg-blue-600 text-white font-black py-2 rounded-xl hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-500/20 active:scale-95 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-xs"
           >
             Aplicar Filtros
             <ChevronRight size={16} />

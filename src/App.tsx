@@ -12,6 +12,8 @@ import PropertyDetail from './pages/PropertyDetail';
 import RequirementForm from './pages/RequirementForm';
 import MatchingView from './pages/MatchingView';
 import LoginPage from './pages/LoginPage';
+import { LoadingProvider } from './context/LoadingContext';
+import GlobalSpinner from './components/GlobalSpinner';
 
 const Navigation = ({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (v: boolean) => void }) => {
   const location = useLocation();
@@ -165,6 +167,7 @@ const MainAppLayout = () => {
       </div>
 
       <Navigation isOpen={isMenuOpen} setIsOpen={setIsMenuOpen} />
+      <GlobalSpinner />
 
       <main className="flex-1 p-4 md:p-8 overflow-y-auto h-[calc(100vh-64px)] md:h-screen">
         <Routes>
@@ -188,11 +191,13 @@ const MainAppLayout = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <MainAppLayout />
-      </Router>
-    </AuthProvider>
+    <LoadingProvider>
+      <AuthProvider>
+        <Router>
+          <MainAppLayout />
+        </Router>
+      </AuthProvider>
+    </LoadingProvider>
   );
 };
 

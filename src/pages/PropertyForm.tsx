@@ -5,22 +5,29 @@ import { propertyService, cloudinaryService } from '../services/api';
 import {
   Upload, X, MapPin, Building2, Ruler, Bed, Bath,
   Car, Loader2, Save, Image as ImageIcon, ChevronLeft,
-  Lock, Unlock, Globe, Check, Star, ChevronRight
+  Lock, Unlock, Check, Star, ChevronRight, Map, Type
 } from 'lucide-react';
 import { useCommonValues } from '../hooks/useCommonValues';
 import { useAuth } from '../context/AuthContext';
 import MapPicker from '../components/MapPicker';
+
+interface ImageItem {
+  file?: File;
+  url: string;
+  isNew: boolean;
+}
 
 const PropertyForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isProfileComplete } = useAuth();
   const { values, loading: valuesLoading } = useCommonValues();
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<ImageItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isLockedToMap, setIsLockedToMap] = useState(false);
+  const [locationMethod, setLocationMethod] = useState<'map' | 'manual' | null>(null);
   const [tempMapData, setTempMapData] = useState<any>(null);
   const [manualNumber, setManualNumber] = useState('');
 
@@ -80,8 +87,17 @@ const PropertyForm: React.FC = () => {
             isAddressPublic: p.isaddresspublic !== undefined ? p.isaddresspublic : true,
             reference: p.reference || ''
           });
-          if (p.latitude && p.longitude) setIsLockedToMap(true);
-          setImages(p.images?.map((img: any) => img.imageurl) || []);
+          if (p.latitude && p.longitude) {
+            setIsLockedToMap(true);
+            setLocationMethod('map');
+          } else if (p.address) {
+            setLocationMethod('manual');
+            setIsLockedToMap(false);
+          }
+          setImages(p.images?.map((img: any) => ({
+            url: img.imageurl,
+            isNew: false
+          })) || []);
         } catch (err) {
           console.error(err);
         }
@@ -90,30 +106,44 @@ const PropertyForm: React.FC = () => {
     }
   }, [id, reset, isProfileComplete, navigate]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const propertyType = watch('propertyType');
+
+  useEffect(() => {
+    if (propertyType === 'Terreno') {
+      setValue('rooms', 0);
+      setValue('bathrooms', 0);
+      setValue('parkingSpots', 0);
+      setValue('floorNumber', 0);
+      setValue('hasElevator', false);
+    }
+  }, [propertyType, setValue]);
+
+  const handleManualEntry = () => {
+    setLocationMethod('manual');
+    setIsLockedToMap(false);
+    setValue('latitude', null);
+    setValue('longitude', null);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    setIsUploading(true);
-    try {
-      const sigRes = await cloudinaryService.getSignature();
-      const newImages = [...images];
-
-      for (let i = 0; i < files.length; i++) {
-        if (newImages.length >= 10) break;
-        const url = await cloudinaryService.uploadImage(files[i], sigRes.data);
-        newImages.push(url);
-      }
-      setImages(newImages);
-    } catch (err) {
-      console.error(err);
-      alert('Error subiendo imágenes');
-    } finally {
-      setIsUploading(false);
+    const newItems: ImageItem[] = [];
+    for (let i = 0; i < files.length; i++) {
+      if (images.length + newItems.length >= 10) break;
+      const file = files[i];
+      const url = URL.createObjectURL(file);
+      newItems.push({ file, url, isNew: true });
     }
+    setImages([...images, ...newItems]);
   };
 
   const removeImage = (index: number) => {
+    const img = images[index];
+    if (img.isNew) {
+      URL.revokeObjectURL(img.url);
+    }
     setImages(images.filter((_, i) => i !== index));
   };
 
@@ -137,8 +167,23 @@ const PropertyForm: React.FC = () => {
     if (images.length === 0) return alert('Debes subir al menos una imagen');
 
     setIsSaving(true);
+    setIsUploading(true);
     try {
-      const payload = { ...data, images };
+      // 1. Upload new images to Cloudinary
+      const sigRes = await cloudinaryService.getSignature();
+      const finalImageUrls: string[] = [];
+
+      for (const img of images) {
+        if (img.isNew && img.file) {
+          const uploadedUrl = await cloudinaryService.uploadImage(img.file, sigRes.data);
+          finalImageUrls.push(uploadedUrl);
+        } else {
+          finalImageUrls.push(img.url);
+        }
+      }
+
+      // 2. Send to backend
+      const payload = { ...data, images: finalImageUrls };
       if (id) {
         await propertyService.update(id, payload);
       } else {
@@ -150,6 +195,7 @@ const PropertyForm: React.FC = () => {
       alert(err.response?.data?.error || 'Error guardando propiedad');
     } finally {
       setIsSaving(false);
+      setIsUploading(false);
     }
   };
 
@@ -171,9 +217,7 @@ const PropertyForm: React.FC = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Basic Info Card */}
-        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6">
-
-
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Tipo de Operación</label>
@@ -244,148 +288,168 @@ const PropertyForm: React.FC = () => {
                 />
               </div>
             </div>
-            {/* Map Modal Trigger - More Compact */}
-            <div className="col-span-full bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4 group">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform shrink-0">
-                  <Globe size={18} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 tracking-tight">Ubicar en el Mapa</h3>
-                  <p className="text-xs text-slate-500 font-bold leading-tight">Usa el mapa para autocompletar la dirección y el distrito.</p>
-                </div>
-              </div>
+          </div>
 
+          <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
+            <label className="text-sm font-black uppercase tracking-widest text-slate-400">¿Cómo prefieres ingresar la ubicación?</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => setIsMapModalOpen(true)}
-                className="px-6 py-2.5 bg-white text-blue-600 border-2 border-blue-50 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm flex items-center gap-2 active:scale-95 whitespace-nowrap"
+                className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 interactive-card ${locationMethod === 'map' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-600 hover:border-blue-200'}`}
               >
-                <MapPin size={16} />
-                Abrir Mapa Interactivo
+                <div className={`p-3 rounded-xl ${locationMethod === 'map' ? 'bg-blue-500' : 'bg-blue-50 text-blue-600'}`}>
+                  <Map size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="font-black text-sm uppercase tracking-wide">Seleccionar en Mapa</p>
+                  <p className={`text-[10px] font-bold ${locationMethod === 'map' ? 'text-blue-100' : 'text-slate-400'}`}>Precisión GPS para tu propiedad</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleManualEntry}
+                className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-4 interactive-card ${locationMethod === 'manual' ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-600 hover:border-blue-200'}`}
+              >
+                <div className={`p-3 rounded-xl ${locationMethod === 'manual' ? 'bg-blue-500' : 'bg-blue-50 text-blue-600'}`}>
+                  <Type size={24} />
+                </div>
+                <div className="text-left">
+                  <p className="font-black text-sm uppercase tracking-wide">Ingreso Manual</p>
+                  <p className={`text-[10px] font-bold ${locationMethod === 'manual' ? 'text-blue-100' : 'text-slate-400'}`}>Escribir dirección manualmente</p>
+                </div>
               </button>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-black uppercase tracking-widest text-slate-400">Distrito</label>
-                {isLockedToMap && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (confirm("¿Quieres desbloquear los campos? Se perderá la ubicación exacta del mapa.")) {
-                        setIsLockedToMap(false);
-                        setValue('latitude', null);
-                        setValue('longitude', null);
-                      }
-                    }}
-                    className="flex items-center gap-1.5 text-[9px] font-black text-blue-600 uppercase hover:text-blue-700 transition-colors"
-                  >
-                    <Lock size={10} />
-                    Bloqueado
-                  </button>
-                )}
-                {!isLockedToMap && watch('latitude') === null && (
-                  <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
-                    <Unlock size={10} />
-                    Manual
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                <select
-                  {...register('district', { required: true })}
-                  disabled={isLockedToMap}
-                  className={`w-full pl-10 pr-10 py-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
-                >
-                  <option value="">Selecciona un distrito</option>
-                  {values?.Distrito?.map((v: any) => (
-                    <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <label className="text-sm font-black uppercase tracking-widest text-slate-400">Dirección Exacta</label>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <span className={`text-[9px] font-bold uppercase transition-colors ${watch('isAddressPublic') ? 'text-blue-600' : 'text-slate-400'}`}>
-                      {watch('isAddressPublic') ? 'Pública' : 'Reservada'}
+          {locationMethod && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-black uppercase tracking-widest text-slate-400">Distrito</label>
+                  {isLockedToMap && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("¿Quieres desbloquear los campos? Se perderá la ubicación exacta del mapa.")) {
+                          setIsLockedToMap(false);
+                          setValue('latitude', null);
+                          setValue('longitude', null);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 text-[9px] font-black text-blue-600 uppercase hover:text-blue-700 transition-colors"
+                    >
+                      <Lock size={10} />
+                      Bloqueado
+                    </button>
+                  )}
+                  {!isLockedToMap && watch('latitude') === null && (
+                    <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
+                      <Unlock size={10} />
+                      Manual
                     </span>
-                    <div className="relative inline-flex items-center">
-                      <input type="checkbox" {...register('isAddressPublic')} className="sr-only peer" />
-                      <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
-                    </div>
-                  </label>
+                  )}
+                </div>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <select
+                    {...register('district', { required: true })}
+                    disabled={isLockedToMap}
+                    className={`w-full pl-10 pr-10 py-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
+                  >
+                    <option value="">Selecciona un distrito</option>
+                    {values?.Distrito?.map((v: any) => (
+                      <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <input
-                type="text"
-                {...register('address', { required: watch('isAddressPublic') })}
-                readOnly={isLockedToMap}
-                className={`p-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
-                placeholder="Ej: Av. Larco 123"
-              />
-              {!watch('isAddressPublic') && (
-                <p className="text-[10px] text-blue-600 font-bold italic">* La dirección exacta solo será visible para el administrador.</p>
-              )}
-            </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-black uppercase tracking-widest text-slate-400">Referencia / Ubicación Pública</label>
-              <input
-                type="text"
-                {...register('reference', { required: !watch('isAddressPublic') })}
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm"
-                placeholder="Ej: Frente al parque, a dos cuadras del óvalo"
-              />
-              {!watch('isAddressPublic') && (
-                <p className="text-[10px] text-emerald-600 font-bold italic">* Este texto será visible para todos los usuarios.</p>
-              )}
-            </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-black uppercase tracking-widest text-slate-400">Dirección Exacta</label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <span className={`text-[9px] font-bold uppercase transition-colors ${watch('isAddressPublic') ? 'text-blue-600' : 'text-slate-400'}`}>
+                        {watch('isAddressPublic') ? 'Pública' : 'Reservada'}
+                      </span>
+                      <div className="relative inline-flex items-center">
+                        <input type="checkbox" {...register('isAddressPublic')} className="sr-only peer" />
+                        <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  {...register('address', { required: watch('isAddressPublic') })}
+                  readOnly={isLockedToMap}
+                  className={`p-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
+                  placeholder="Ej: Av. Larco 123"
+                />
+                {!watch('isAddressPublic') && (
+                  <p className="text-[10px] text-blue-600 font-bold italic">* La dirección exacta solo será visible para el administrador.</p>
+                )}
+              </div>
 
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 md:p-6 bg-slate-50 rounded-3xl border border-slate-100">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Habitaciones</label>
-              <div className="relative">
-                <Bed size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" min="0" {...register('rooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-black uppercase tracking-widest text-slate-400">Referencia / Ubicación Pública</label>
+                <input
+                  type="text"
+                  {...register('reference', { required: !watch('isAddressPublic') })}
+                  className="p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm"
+                  placeholder="Ej: Frente al parque, a dos cuadras del óvalo"
+                />
+                {!watch('isAddressPublic') && (
+                  <p className="text-[10px] text-emerald-600 font-bold italic">* Este texto será visible para todos los usuarios.</p>
+                )}
               </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Baños</label>
-              <div className="relative">
-                <Bath size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" min="0" {...register('bathrooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cocheras</label>
-              <div className="relative">
-                <Car size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" min="0" {...register('parkingSpots', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Piso</label>
-              <div className="relative">
-                <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" min="0" {...register('floorNumber', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
-              </div>
-            </div>
-          </div>
+          )}
 
-          <div className="flex items-center gap-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
-            <div className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" {...register('hasElevator')} id="elevator" className="sr-only peer" />
-              <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-            </div>
-            <label htmlFor="elevator" className="font-bold text-slate-700 cursor-pointer text-sm">¿Cuenta con ascensor?</label>
-          </div>
+          {watch('propertyType') !== 'Terreno' && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 md:p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Habitaciones</label>
+                  <div className="relative">
+                    <Bed size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="number" min="0" {...register('rooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Baños</label>
+                  <div className="relative">
+                    <Bath size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="number" min="0" {...register('bathrooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cocheras</label>
+                  <div className="relative">
+                    <Car size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="number" min="0" {...register('parkingSpots', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Piso</label>
+                  <div className="relative">
+                    <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="number" min="0" {...register('floorNumber', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
+                  </div>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition-all">
+                <div className="relative inline-flex items-center">
+                  <input type="checkbox" {...register('hasElevator')} className="sr-only peer" />
+                  <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </div>
+                <span className="font-bold text-slate-700 text-sm">¿Cuenta con ascensor?</span>
+              </label>
+            </>
+          )}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-black uppercase tracking-widest text-slate-400">Descripción Detallada</label>
@@ -425,13 +489,13 @@ const PropertyForm: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
             {images.map((img, idx) => (
               <div key={idx} className={`relative group rounded-[1.5rem] overflow-hidden aspect-square border-4 ${idx === 0 ? 'border-blue-500 shadow-lg shadow-blue-100' : 'border-white shadow-md'} hover:shadow-xl transition-all`}>
-                <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
+                <img src={img.url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
                 
                 {/* Delete Button (Always Visible on Hover) */}
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}
-                  className="absolute top-2 right-2 bg-red-500/90 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm hover:bg-red-600"
+                  className="absolute top-2 right-2 bg-red-500/90 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all interactive-icon shadow-lg backdrop-blur-sm hover:bg-red-600"
                 >
                   <X size={14} />
                 </button>
@@ -449,7 +513,7 @@ const PropertyForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setAsCover(idx)}
-                      className="p-1.5 bg-white/20 hover:bg-blue-500 text-white rounded-lg transition-colors border border-white/30"
+                      className="p-1.5 bg-white/20 hover:bg-blue-500 text-white rounded-lg transition-all interactive-icon border border-white/30"
                       title="Poner como portada"
                     >
                       <Star size={14} className={idx === 0 ? 'fill-current' : ''} />
@@ -459,7 +523,7 @@ const PropertyForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => moveImage(idx, -1)}
-                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-colors border border-white/30"
+                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-all interactive-icon border border-white/30"
                       title="Mover atrás"
                     >
                       <ChevronLeft size={14} />
@@ -469,7 +533,7 @@ const PropertyForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => moveImage(idx, 1)}
-                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-colors border border-white/30"
+                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-all interactive-icon border border-white/30"
                       title="Mover adelante"
                     >
                       <ChevronRight size={14} />
@@ -499,9 +563,9 @@ const PropertyForm: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving || isUploading}
-            className="px-10 py-3 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 min-w-[200px]"
+            className="px-10 py-3 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black hover:shadow-2xl hover:shadow-slate-300 hover:-translate-y-0.5 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 min-w-[200px] active:scale-95"
           >
-            {isSaving ? <Loader2 className="animate-spin size={18}" /> : <Save size={18} className="text-blue-400" />}
+            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} className="text-blue-400" />}
             {id ? 'Guardar Cambios' : 'Publicar Ahora'}
           </button>
         </div>
@@ -510,7 +574,7 @@ const PropertyForm: React.FC = () => {
       {/* Map Modal */}
       {isMapModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-4">
-          <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-md" onClick={() => setIsMapModalOpen(false)} />
+          <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-md cursor-pointer" onClick={() => setIsMapModalOpen(false)} />
 
           <div className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col h-[90vh]">
             {/* Ultra-Compact Header */}
@@ -605,6 +669,7 @@ const PropertyForm: React.FC = () => {
                       setValue('district', tempMapData.districtCode);
                     }
                     setIsLockedToMap(true);
+                    setLocationMethod('map'); // Set method to map on confirmation
                     setIsMapModalOpen(false);
                     setManualNumber(''); // Reset for next time
                   }}

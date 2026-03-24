@@ -150,27 +150,40 @@ export const handler: Handler = async (event) => {
       const { id } = event.queryStringParameters || {};
       if (!id) return { statusCode: 400, body: 'Missing ID' };
 
-      const existing = await query('SELECT OwnerId FROM Properties WHERE Id = $1', [id]);
+      const existing = await query('SELECT OwnerId, OperationType FROM Properties WHERE Id = $1', [id]);
       if (existing.rows.length === 0) return { statusCode: 404, body: 'Not Found' };
-      if (existing.rows[0].ownerid !== user.userId && !isAdmin(user)) return { statusCode: 403, body: 'Forbidden' };
+      const isOwner = existing.rows[0].ownerid === user.userId;
+      if (!isOwner && !isAdmin(user)) return { statusCode: 403, body: 'Forbidden' };
 
       const body = JSON.parse(event.body || '{}');
-      // Admin can update status
-      if (isAdmin(user) && body.status) {
-        await query('UPDATE Properties SET Status = $1, UpdatedAt = CURRENT_TIMESTAMP WHERE Id = $2', [body.status, id]);
-      } else {
-        const { operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, images, latitude, longitude, isAddressPublic, reference } = body;
-        await query(
-          `UPDATE Properties SET OperationType = $1, PropertyType = $2, Price = $3, Area = $4, District = $5, Address = $6, Rooms = $7, Bathrooms = $8, ParkingSpots = $9, FloorNumber = $10, HasElevator = $11, Description = $12, Status = 'Pendiente', Latitude = $13, Longitude = $14, IsAddressPublic = $15, Reference = $16, UpdatedAt = CURRENT_TIMESTAMP
-           WHERE Id = $17`,
-          [operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference, id]
-        );
-
-        if (images && Array.isArray(images)) {
-          await query('DELETE FROM PropertyImages WHERE PropertyId = $1', [id]);
-          for (let i = 0; i < Math.min(images.length, 10); i++) {
-            await query('INSERT INTO PropertyImages (PropertyId, ImageUrl, Orden) VALUES ($1, $2, $3)', [id, images[i], i]);
+      
+      // Handle Status Update (Owner can only set Alquilado/Vendido)
+      if (body.status && (isAdmin(user) || (isOwner && ['Alquilado', 'Vendido'].includes(body.status)))) {
+        if (!isAdmin(user)) {
+          const opType = existing.rows[0].operationtype;
+          if (body.status === 'Alquilado' && opType !== 'Alquiler') {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Solo propiedades en alquiler pueden marcarse como alquiladas.' }) };
           }
+          if (body.status === 'Vendido' && opType !== 'Venta') {
+            return { statusCode: 400, body: JSON.stringify({ error: 'Solo propiedades en venta pueden marcarse como vendidas.' }) };
+          }
+        }
+        await query('UPDATE Properties SET Status = $1, UpdatedAt = CURRENT_TIMESTAMP WHERE Id = $2', [body.status, id]);
+        return { statusCode: 200, body: 'Status Updated' };
+      } 
+      
+      // Handle Full Update (resets status to Pendiente)
+      const { operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, images, latitude, longitude, isAddressPublic, reference } = body;
+      await query(
+        `UPDATE Properties SET OperationType = $1, PropertyType = $2, Price = $3, Area = $4, District = $5, Address = $6, Rooms = $7, Bathrooms = $8, ParkingSpots = $9, FloorNumber = $10, HasElevator = $11, Description = $12, Status = 'Pendiente', Latitude = $13, Longitude = $14, IsAddressPublic = $15, Reference = $16, UpdatedAt = CURRENT_TIMESTAMP
+          WHERE Id = $17`,
+        [operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference, id]
+      );
+
+      if (images && Array.isArray(images)) {
+        await query('DELETE FROM PropertyImages WHERE PropertyId = $1', [id]);
+        for (let i = 0; i < Math.min(images.length, 10); i++) {
+          await query('INSERT INTO PropertyImages (PropertyId, ImageUrl, Orden) VALUES ($1, $2, $3)', [id, images[i], i]);
         }
       }
 

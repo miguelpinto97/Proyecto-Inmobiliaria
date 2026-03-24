@@ -56,7 +56,7 @@ export default function Home() {
                 <div className="relative p-1 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
                   <button
                     onClick={() => navigate('/propiedades')}
-                    className="text- w-full flex items-center justify-center gap-3 px-8 py-1.5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-slate-800 transition-all group/btn"
+                    className="text- w-full flex items-center justify-center gap-3 px-8 py-1.5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black hover:shadow-2xl hover:shadow-blue-500/20 active:scale-95 transition-all group/btn"
                   >
                     <Search className="w-5 h-5" />
                     Explorar Propiedades
@@ -111,7 +111,7 @@ export default function Home() {
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all">
+          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 transition-all interactive-card">
             <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
               <Zap className="w-8 h-8" />
             </div>
@@ -121,7 +121,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all">
+          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 transition-all interactive-card">
             <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
               <HomeIcon className="w-8 h-8" />
             </div>
@@ -131,7 +131,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:shadow-xl transition-all">
+          <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 transition-all interactive-card">
             <div className="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
               <Key className="w-8 h-8" />
             </div>
