@@ -15,9 +15,9 @@ const PriceSlider = ({ min, max, maxLimit, onChange }: { min: string, max: strin
           <label className="text-[9px] font-bold text-slate-400 uppercase">Min</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">S/</span>
-            <input 
-              type="number" 
-              value={min} 
+            <input
+              type="number"
+              value={min}
               onChange={(e) => onChange(e.target.value, max)}
               className="w-full pl-8 pr-2 py-2 rounded-xl border border-slate-100 bg-slate-50 text-xs font-black text-slate-700 outline-none focus:border-blue-500"
               placeholder="0"
@@ -28,9 +28,9 @@ const PriceSlider = ({ min, max, maxLimit, onChange }: { min: string, max: strin
           <label className="text-[9px] font-bold text-slate-400 uppercase">Max</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">S/</span>
-            <input 
-              type="number" 
-              value={max} 
+            <input
+              type="number"
+              value={max}
               onChange={(e) => onChange(min, e.target.value)}
               className="w-full pl-8 pr-2 py-2 rounded-xl border border-slate-100 bg-slate-50 text-xs font-black text-slate-700 outline-none focus:border-blue-500"
               placeholder={maxLimit.toString()}
@@ -68,21 +68,21 @@ const PropertyList: React.FC = () => {
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [filters, setFilters] = useState({ 
-    operationType: '', 
+  const [filters, setFilters] = useState({
+    operationType: '',
     propertyType: '',
     district: '',
     minPrice: '',
     maxPrice: '',
     rooms: '',
     bathrooms: '',
-    search: '' 
+    search: ''
   });
 
   const fetchProperties = async () => {
     setIsLoading(true);
     try {
-      const res = await propertyService.getAll({ 
+      const res = await propertyService.getAll({
         status: 'Aprobada',
         ...filters
       });
@@ -133,7 +133,7 @@ const PropertyList: React.FC = () => {
           <p className="text-slate-500 font-medium">Explora propiedades exclusivas seleccionadas para ti.</p>
         </div>
         <div className="flex gap-4 w-full md:w-auto">
-          <button 
+          <button
             onClick={() => setIsSidebarOpen(true)}
             className="bg-slate-900 text-white p-2.5 rounded-xl hover:bg-slate-800 transition-all shadow-lg flex items-center gap-2 px-5"
           >
@@ -145,7 +145,7 @@ const PropertyList: React.FC = () => {
 
       {/* Filter Sidebar Backdrop */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] transition-all"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -153,13 +153,13 @@ const PropertyList: React.FC = () => {
 
       {/* Filter Sidebar (Now Left) */}
       <aside className={`
-        fixed top-0 left-0 h-full w-full max-w-xs bg-white z-[101] shadow-2xl transition-transform duration-500 ease-out p-6 flex flex-col
+        fixed top-0 left-0 h-full w-full max-w-xs bg-white z-[101] shadow-2xl transition-transform duration-500 ease-out pt-6 px-6 pb-3 flex flex-col
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-             <Filter size={20} className="text-blue-600" />
-             Filtros
+            <Filter size={20} className="text-blue-600" />
+            Filtros
           </h2>
           <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
             <X size={20} />
@@ -171,9 +171,9 @@ const PropertyList: React.FC = () => {
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscar</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
-              <input 
-                type="text" 
-                placeholder="Ubicación..." 
+              <input
+                type="text"
+                placeholder="Ubicación..."
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -192,8 +192,8 @@ const PropertyList: React.FC = () => {
                     onClick={() => handleOperationTypeToggle(v.codigo)}
                     className={`
                       px-4 py-2 rounded-xl text-xs font-black transition-all border-2
-                      ${isActive 
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' 
+                      ${isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
                         : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}
                     `}
                   >
@@ -206,7 +206,7 @@ const PropertyList: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inmueble</label>
-            <select 
+            <select
               className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none"
               value={filters.propertyType}
               onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
@@ -220,7 +220,7 @@ const PropertyList: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Distrito</label>
-            <select 
+            <select
               className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none"
               value={filters.district}
               onChange={(e) => setFilters({ ...filters, district: e.target.value })}
@@ -234,19 +234,19 @@ const PropertyList: React.FC = () => {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rango de Precio</label>
-            <PriceSlider 
-              min={filters.minPrice} 
-              max={filters.maxPrice} 
+            <PriceSlider
+              min={filters.minPrice}
+              max={filters.maxPrice}
               maxLimit={priceLimit}
-              onChange={(min, max) => setFilters({ ...filters, minPrice: min, maxPrice: max })} 
+              onChange={(min, max) => setFilters({ ...filters, minPrice: min, maxPrice: max })}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Habs.</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="0+"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
                 value={filters.rooms}
@@ -255,8 +255,8 @@ const PropertyList: React.FC = () => {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Baños</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 placeholder="0+"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
                 value={filters.bathrooms}
@@ -266,15 +266,15 @@ const PropertyList: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-6 border-t border-slate-50 flex flex-col gap-3">
-          <button 
+        <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
+          <button
             onClick={fetchProperties}
-            className="w-full bg-blue-600 text-white font-black py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-sm"
+            className="w-full bg-blue-600 text-white font-black py-2 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 flex items-center justify-center gap-2 text-xs"
           >
             Aplicar Filtros
             <ChevronRight size={16} />
           </button>
-          <button 
+          <button
             onClick={clearFilters}
             className="w-full text-slate-400 font-bold py-1 text-xs hover:text-red-500 transition-colors"
           >

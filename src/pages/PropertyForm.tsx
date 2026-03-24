@@ -140,96 +140,116 @@ const PropertyForm: React.FC = () => {
   if (valuesLoading) return <div className="flex justify-center items-center h-screen text-blue-500"><Loader2 className="animate-spin w-12 h-12" /></div>;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 space-y-8 animate-fade-in pb-24">
+    <div className="max-w-5xl mx-auto px-4 py-4 space-y-8 animate-fade-in pb-8">
       <div className="flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-3 bg-white hover:bg-slate-50 rounded-full shadow-sm transition-all border border-slate-100">
           <ChevronLeft size={24} className="text-slate-600" />
         </button>
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">
             {id ? 'Editar Propiedad' : 'Publicar Propiedad'}
           </h1>
-          <p className="text-slate-500 font-bold">Completa los detalles para atraer a los mejores compradores.</p>
+          <p className="text-slate-500 font-bold text-sm">Completa los detalles para atraer a los mejores compradores.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-12">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Basic Info Card */}
-        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6">
 
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Tipo de Operación</label>
-              <select
-                {...register('operationType', { required: true })}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer"
-              >
-                {values?.TipoOperacion?.map((v: any) => (
-                  <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {values?.TipoOperacion?.map((v: any) => {
+                  const isSelected = watch('operationType') === v.codigo;
+                  return (
+                    <button
+                      key={v.codigo}
+                      type="button"
+                      onClick={() => setValue('operationType', v.codigo)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${isSelected
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100'
+                        : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
+                        }`}
+                    >
+                      {v.descripcion}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex flex-col gap-3">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Tipo de Inmueble</label>
-              <select
-                {...register('propertyType', { required: true })}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">Selecciona tipo</option>
-                {values?.TipoInmueble?.map((v: any) => (
-                  <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {values?.TipoInmueble?.map((v: any) => {
+                  const isSelected = watch('propertyType') === v.codigo;
+                  return (
+                    <button
+                      key={v.codigo}
+                      type="button"
+                      onClick={() => setValue('propertyType', v.codigo)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${isSelected
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100'
+                        : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
+                        }`}
+                    >
+                      {v.descripcion}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Precio (S/)</label>
               <div className="relative">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">S/</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">S/</span>
                 <input
-                  type="number" step="0.01"
-                  {...register('price', { required: true })}
-                  className="w-full pl-12 pr-5 py-5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all"
+                  type="number" step="0.01" min="0"
+                  {...register('price', { required: true, min: 0 })}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm"
                   placeholder="0.00"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Área Total (m²)</label>
               <div className="relative">
-                <Ruler className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input
-                  type="number" step="0.1"
-                  {...register('area', { required: true })}
-                  className="w-full pl-12 pr-5 py-5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all"
+                  type="number" step="0.1" min="0"
+                  {...register('area', { required: true, min: 0 })}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm"
                   placeholder="0.0"
                 />
               </div>
             </div>
-            {/* Map Modal Trigger */}
-            <div className="bg-blue-50/50 p-8 rounded-[2.5rem] border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-6 group">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                  <Globe size={32} className="text-white" />
+            {/* Map Modal Trigger - More Compact */}
+            <div className="col-span-full bg-blue-50/50 p-4 rounded-3xl border border-blue-100 flex flex-col md:flex-row items-center justify-between gap-4 group">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform shrink-0">
+                  <Globe size={18} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Ubicar en el Mapa</h3>
-                  <p className="text-sm text-slate-500 font-bold">Usa el mapa para autocompletar la dirección y el distrito.</p>
+                  <h3 className="text-base font-black text-slate-900 tracking-tight">Ubicar en el Mapa</h3>
+                  <p className="text-xs text-slate-500 font-bold leading-tight">Usa el mapa para autocompletar la dirección y el distrito.</p>
                 </div>
               </div>
+
               <button
                 type="button"
                 onClick={() => setIsMapModalOpen(true)}
-                className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-100 rounded-2xl font-black hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm flex items-center gap-3 active:scale-95"
+                className="px-6 py-2.5 bg-white text-blue-600 border-2 border-blue-50 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm flex items-center gap-2 active:scale-95 whitespace-nowrap"
               >
-                <MapPin size={18} />
+                <MapPin size={16} />
                 Abrir Mapa Interactivo
               </button>
             </div>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-black uppercase tracking-widest text-slate-400">Distrito</label>
                 {isLockedToMap && (
@@ -242,25 +262,25 @@ const PropertyForm: React.FC = () => {
                         setValue('longitude', null);
                       }
                     }}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-blue-600 uppercase hover:text-blue-700 transition-colors"
+                    className="flex items-center gap-1.5 text-[9px] font-black text-blue-600 uppercase hover:text-blue-700 transition-colors"
                   >
-                    <Lock size={12} />
-                    Bloqueado al Mapa
+                    <Lock size={10} />
+                    Bloqueado
                   </button>
                 )}
                 {!isLockedToMap && watch('latitude') === null && (
-                  <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-300 uppercase">
-                    <Unlock size={12} />
+                  <span className="flex items-center gap-1.5 text-[9px] font-black text-slate-300 uppercase">
+                    <Unlock size={10} />
                     Manual
                   </span>
                 )}
               </div>
               <div className="relative">
-                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <select
                   {...register('district', { required: true })}
                   disabled={isLockedToMap}
-                  className={`w-full pl-12 pr-10 py-5 rounded-2xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
+                  className={`w-full pl-10 pr-10 py-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
                 >
                   <option value="">Selecciona un distrito</option>
                   {values?.Distrito?.map((v: any) => (
@@ -270,17 +290,17 @@ const PropertyForm: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
                 <label className="text-sm font-black uppercase tracking-widest text-slate-400">Dirección Exacta</label>
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer group">
-                    <span className={`text-[10px] font-bold uppercase transition-colors ${watch('isAddressPublic') ? 'text-blue-600' : 'text-slate-400'}`}>
+                    <span className={`text-[9px] font-bold uppercase transition-colors ${watch('isAddressPublic') ? 'text-blue-600' : 'text-slate-400'}`}>
                       {watch('isAddressPublic') ? 'Pública' : 'Reservada'}
                     </span>
                     <div className="relative inline-flex items-center">
                       <input type="checkbox" {...register('isAddressPublic')} className="sr-only peer" />
-                      <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                      <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
                     </div>
                   </label>
                 </div>
@@ -289,7 +309,7 @@ const PropertyForm: React.FC = () => {
                 type="text"
                 {...register('address', { required: watch('isAddressPublic') })}
                 readOnly={isLockedToMap}
-                className={`p-5 rounded-2xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
+                className={`p-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
                 placeholder="Ej: Av. Larco 123"
               />
               {!watch('isAddressPublic') && (
@@ -297,12 +317,12 @@ const PropertyForm: React.FC = () => {
               )}
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Referencia / Ubicación Pública</label>
               <input
                 type="text"
                 {...register('reference', { required: !watch('isAddressPublic') })}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all"
+                className="p-3 rounded-xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all text-sm"
                 placeholder="Ej: Frente al parque, a dos cuadras del óvalo"
               />
               {!watch('isAddressPublic') && (
@@ -312,68 +332,68 @@ const PropertyForm: React.FC = () => {
 
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
-            <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 md:p-6 bg-slate-50 rounded-3xl border border-slate-100">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Habitaciones</label>
               <div className="relative">
-                <Bed size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" {...register('rooms')} className="w-full pl-10 pr-3 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold" />
+                <Bed size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input type="number" min="0" {...register('rooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Baños</label>
               <div className="relative">
-                <Bath size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" {...register('bathrooms')} className="w-full pl-10 pr-3 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold" />
+                <Bath size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input type="number" min="0" {...register('bathrooms', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cocheras</label>
               <div className="relative">
-                <Car size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" {...register('parkingSpots')} className="w-full pl-10 pr-3 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold" />
+                <Car size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input type="number" min="0" {...register('parkingSpots', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Piso</label>
               <div className="relative">
-                <Building2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                <input type="number" {...register('floorNumber')} className="w-full pl-10 pr-3 py-4 rounded-2xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold" />
+                <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                <input type="number" min="0" {...register('floorNumber', { min: 0 })} className="w-full pl-8 pr-2 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-500 text-center font-bold text-sm" />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 bg-emerald-50/50 p-6 rounded-3xl border border-emerald-100">
+          <div className="flex items-center gap-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
             <div className="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" {...register('hasElevator')} id="elevator" className="sr-only peer" />
-              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500"></div>
+              <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
             </div>
-            <label htmlFor="elevator" className="font-bold text-slate-700 cursor-pointer">¿Cuenta con ascensor?</label>
+            <label htmlFor="elevator" className="font-bold text-slate-700 cursor-pointer text-sm">¿Cuenta con ascensor?</label>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-black uppercase tracking-widest text-slate-400">Descripción Detallada</label>
             <textarea
               {...register('description')}
-              rows={5}
-              className="p-5 rounded-[2rem] border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-medium text-slate-700 transition-all resize-none"
+              rows={4}
+              className="p-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-medium text-slate-700 transition-all resize-none text-sm"
               placeholder="Describe lo mejor de tu propiedad..."
             ></textarea>
           </div>
         </div>
 
         {/* Image Upload Card */}
-        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-8">
-          <div className="flex justify-between items-center bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-xl space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-50 p-4 md:p-6 rounded-3xl border border-slate-100 gap-4">
             <div>
-              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                <ImageIcon className="text-blue-500" />
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                <ImageIcon className="text-blue-500" size={20} />
                 Galería de Fotos
               </h2>
-              <p className="text-sm text-slate-500 font-bold mt-1">Sube hasta 10 imágenes (máx. 2MB cada una).</p>
+              <p className="text-xs text-slate-500 font-bold mt-1">Sube hasta 10 imágenes (máx. 2MB).</p>
             </div>
-            <label className={`cursor-pointer inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-600 border border-blue-100 rounded-2xl font-black hover:bg-blue-50 transition-all shadow-sm ${images.length >= 10 || isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-              <Upload size={20} />
+            <label className={`cursor-pointer inline-flex items-center gap-2 px-6 py-2.5 bg-white text-blue-600 border border-blue-50 rounded-xl font-black text-xs hover:bg-blue-50 transition-all shadow-sm ${images.length >= 10 || isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+              <Upload size={16} />
               Cargar Fotos
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} disabled={images.length >= 10 || isUploading} />
             </label>
@@ -414,20 +434,20 @@ const PropertyForm: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-6 py-12">
+        <div className="flex justify-end gap-4 py-8">
           <button
             type="button"
             onClick={() => navigate('/dashboard')}
-            className="px-12 py-5 rounded-2xl font-black text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-widest text-sm"
+            className="px-8 py-3 rounded-xl font-black text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all uppercase tracking-widest text-xs"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={isSaving || isUploading}
-            className="px-16 py-5 bg-slate-900 text-white rounded-2xl font-black text-xl hover:bg-black transition-all shadow-2xl shadow-slate-200 flex items-center justify-center gap-4 min-w-[300px]"
+            className="px-10 py-3 bg-slate-900 text-white rounded-xl font-black text-sm hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 min-w-[200px]"
           >
-            {isSaving ? <Loader2 className="animate-spin" /> : <Save size={24} className="text-blue-400" />}
+            {isSaving ? <Loader2 className="animate-spin size={18}" /> : <Save size={18} className="text-blue-400" />}
             {id ? 'Guardar Cambios' : 'Publicar Ahora'}
           </button>
         </div>
@@ -437,7 +457,7 @@ const PropertyForm: React.FC = () => {
       {isMapModalOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-2 sm:p-4">
           <div className="absolute inset-0 bg-slate-900/85 backdrop-blur-md" onClick={() => setIsMapModalOpen(false)} />
-          
+
           <div className="relative w-full max-w-4xl bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col h-[90vh]">
             {/* Ultra-Compact Header */}
             <div className="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -445,8 +465,8 @@ const PropertyForm: React.FC = () => {
                 <MapPin size={14} className="text-blue-600" />
                 Ubicar Propiedad
               </h3>
-              <button 
-                onClick={() => setIsMapModalOpen(false)} 
+              <button
+                onClick={() => setIsMapModalOpen(false)}
                 className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
               >
                 <X size={18} />
@@ -460,7 +480,7 @@ const PropertyForm: React.FC = () => {
                   if (!data.isGeocoding) {
                     const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
                     const searchDist = data.district ? normalize(data.district) : '';
-                    
+
                     const matches = values?.Distrito?.filter((d: any) => {
                       const desc = normalize(d.descripcion);
                       return searchDist && (searchDist.includes(desc) || desc.includes(searchDist));
@@ -516,14 +536,14 @@ const PropertyForm: React.FC = () => {
                     <p className="text-slate-400 font-bold italic text-[10px]">Mueve el PIN para detectar ubicación</p>
                   )}
                 </div>
-                
+
                 <button
                   type="button"
                   disabled={!tempMapData?.address || tempMapData?.isGeocoding}
                   onClick={() => {
                     setValue('latitude', tempMapData.lat);
                     setValue('longitude', tempMapData.lng);
-                    const finalAddress = manualNumber.trim() 
+                    const finalAddress = manualNumber.trim()
                       ? `${tempMapData.address} ${manualNumber.trim()}`
                       : tempMapData.address;
                     setValue('address', finalAddress);
