@@ -75,8 +75,7 @@ const PropertyList: React.FC = () => {
     minPrice: '',
     maxPrice: '',
     rooms: '',
-    bathrooms: '',
-    search: ''
+    bathrooms: ''
   });
 
   const fetchProperties = async () => {
@@ -102,10 +101,27 @@ const PropertyList: React.FC = () => {
     } else {
       newTypes = [...currentTypes, type];
     }
-    setFilters({ ...filters, operationType: newTypes.join(',') });
+    // Si cambia el tipo de operación, reiniciamos el rango de precio
+    setFilters({ 
+      ...filters, 
+      operationType: newTypes.join(','),
+      minPrice: '',
+      maxPrice: ''
+    });
   };
 
-  const priceLimit = (filters.operationType.includes('Venta') || filters.operationType === '') ? 1000000 : 10000;
+  const handlePropertyTypeToggle = (type: string) => {
+    const currentTypes = filters.propertyType ? filters.propertyType.split(',') : [];
+    let newTypes;
+    if (currentTypes.includes(type)) {
+      newTypes = currentTypes.filter(t => t !== type);
+    } else {
+      newTypes = [...currentTypes, type];
+    }
+    setFilters({ ...filters, propertyType: newTypes.join(',') });
+  };
+
+  const priceLimit = (filters.operationType.split(',').includes('Alquiler') && !filters.operationType.split(',').includes('Venta')) ? 5000 : 1000000;
 
   useEffect(() => {
     fetchProperties();
@@ -119,8 +135,7 @@ const PropertyList: React.FC = () => {
       minPrice: '',
       maxPrice: '',
       rooms: '',
-      bathrooms: '',
-      search: ''
+      bathrooms: ''
     });
   };
 
@@ -167,20 +182,6 @@ const PropertyList: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Buscar</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={14} />
-              <input
-                type="text"
-                placeholder="Ubicación..."
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              />
-            </div>
-          </div>
-
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operación</label>
             <div className="flex flex-wrap gap-2">
@@ -204,32 +205,85 @@ const PropertyList: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inmueble</label>
-            <select
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none"
-              value={filters.propertyType}
-              onChange={(e) => setFilters({ ...filters, propertyType: e.target.value })}
-            >
-              <option value="">Todos</option>
-              {values?.TipoInmueble?.map((v: any) => (
-                <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-              ))}
-            </select>
+            <div className="flex flex-wrap gap-2">
+              {values?.TipoInmueble?.map((v: any) => {
+                const isActive = filters.propertyType.split(',').includes(v.codigo);
+                return (
+                  <button
+                    key={v.codigo}
+                    onClick={() => handlePropertyTypeToggle(v.codigo)}
+                    className={`
+                      px-4 py-2 rounded-xl text-xs font-black transition-all border-2
+                      ${isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
+                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}
+                    `}
+                  >
+                    {v.descripcion}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Distrito</label>
-            <select
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none"
-              value={filters.district}
-              onChange={(e) => setFilters({ ...filters, district: e.target.value })}
-            >
-              <option value="">Todos</option>
-              {values?.Distrito?.map((v: any) => (
-                <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-              ))}
-            </select>
+            <div className="relative group/district">
+              <Search className="absolute left-3 top-2.5 text-slate-300" size={14} />
+              <input
+                type="text"
+                placeholder="Buscar distrito..."
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
+                value={filters.district ? (values?.Distrito?.find((d: any) => d.codigo === filters.district)?.descripcion || '') : ''}
+                readOnly
+                onClick={(e) => {
+                  const el = e.currentTarget.nextElementSibling as HTMLElement;
+                  el.classList.toggle('hidden');
+                }}
+              />
+              <div className="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                <div className="sticky top-0 bg-white p-2 border-b border-slate-50">
+                  <input
+                    type="text"
+                    placeholder="Filtrar..."
+                    className="w-full px-3 py-1.5 bg-slate-50 rounded-lg text-xs font-bold outline-none border border-slate-100 focus:border-blue-300"
+                    onChange={(e) => {
+                      const val = e.target.value.toLowerCase();
+                      const items = e.currentTarget.parentElement?.nextElementSibling?.querySelectorAll('button');
+                      items?.forEach((item: any) => {
+                        const text = item.textContent.toLowerCase();
+                        item.style.display = text.includes(val) ? 'block' : 'none';
+                      });
+                    }}
+                  />
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={() => {
+                      setFilters({ ...filters, district: '' });
+                      document.querySelectorAll('.group\\/district div.absolute').forEach(el => el.classList.add('hidden'));
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50"
+                  >
+                    Todos los distritos
+                  </button>
+                  {values?.Distrito?.map((v: any) => (
+                    <button
+                      key={v.codigo}
+                      onClick={() => {
+                        setFilters({ ...filters, district: v.codigo });
+                        document.querySelectorAll('.group\\/district div.absolute').forEach(el => el.classList.add('hidden'));
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      {v.descripcion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

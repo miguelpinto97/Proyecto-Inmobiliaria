@@ -5,7 +5,7 @@ import { propertyService, cloudinaryService } from '../services/api';
 import {
   Upload, X, MapPin, Building2, Ruler, Bed, Bath,
   Car, Loader2, Save, Image as ImageIcon, ChevronLeft,
-  Lock, Unlock, Globe, Check
+  Lock, Unlock, Globe, Check, Star, ChevronRight
 } from 'lucide-react';
 import { useCommonValues } from '../hooks/useCommonValues';
 import { useAuth } from '../context/AuthContext';
@@ -115,6 +115,22 @@ const PropertyForm: React.FC = () => {
 
   const removeImage = (index: number) => {
     setImages(images.filter((_, i) => i !== index));
+  };
+
+  const moveImage = (index: number, direction: number) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= images.length) return;
+    const newImages = [...images];
+    [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
+    setImages(newImages);
+  };
+
+  const setAsCover = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...images];
+    const [coverImg] = newImages.splice(index, 1);
+    newImages.unshift(coverImg);
+    setImages(newImages);
   };
 
   const onSubmit = async (data: any) => {
@@ -408,20 +424,58 @@ const PropertyForm: React.FC = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-6">
             {images.map((img, idx) => (
-              <div key={idx} className="relative group rounded-[2rem] overflow-hidden aspect-square border-4 border-white shadow-md hover:shadow-xl transition-all">
-                <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+              <div key={idx} className={`relative group rounded-[1.5rem] overflow-hidden aspect-square border-4 ${idx === 0 ? 'border-blue-500 shadow-lg shadow-blue-100' : 'border-white shadow-md'} hover:shadow-xl transition-all`}>
+                <img src={img} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="" />
+                
+                {/* Delete Button (Always Visible on Hover) */}
                 <button
                   type="button"
                   onClick={() => removeImage(idx)}
-                  className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  className="absolute top-2 right-2 bg-red-500/90 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm hover:bg-red-600"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
+
+                {/* Cover Indicator (Always Visible) */}
                 {idx === 0 && (
-                  <div className="absolute top-3 left-3 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
+                  <div className="absolute top-2 left-2 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg border border-blue-400">
                     Portada
                   </div>
                 )}
+
+                {/* Selection Overlay (Controls) */}
+                <div className="absolute inset-x-0 bottom-0 p-2 bg-slate-900/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 flex items-center justify-center gap-1.5">
+                  {idx > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setAsCover(idx)}
+                      className="p-1.5 bg-white/20 hover:bg-blue-500 text-white rounded-lg transition-colors border border-white/30"
+                      title="Poner como portada"
+                    >
+                      <Star size={14} className={idx === 0 ? 'fill-current' : ''} />
+                    </button>
+                  )}
+                  {idx > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => moveImage(idx, -1)}
+                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-colors border border-white/30"
+                      title="Mover atrás"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                  )}
+                  {idx < images.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={() => moveImage(idx, 1)}
+                      className="p-1.5 bg-white/20 hover:bg-slate-800 text-white rounded-lg transition-colors border border-white/30"
+                      title="Mover adelante"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {images.length === 0 && !isUploading && (
