@@ -34,8 +34,9 @@ export const propertyService = {
   getMyProperties: () => api.get('/properties', { params: { my: true } }),
   getById: (id: string) => api.get('/properties', { params: { id } }),
   create: (data: any) => api.post('/properties', data),
-  update: (id: string, data: any) => api.put(`/properties?id=${id}`, data),
-  delete: (id: string) => api.delete(`/properties?id=${id}`),
+  update: (id: string, data: any) => api.put<any>(`/properties?id=${id}`, data),
+  updateStatus: (id: number, statusId: number) => api.put<any>(`/properties?id=${id}`, { statusId }),
+  delete: (id: string) => api.delete<any>(`/properties?id=${id}`),
 };
 
 export const userService = {

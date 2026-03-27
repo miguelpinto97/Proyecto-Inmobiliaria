@@ -17,13 +17,13 @@ export const handler: Handler = async (event) => {
     }
 
     if (event.httpMethod === 'PUT') {
-      const { firstName, lastName, phone, address, district } = JSON.parse(event.body || '{}');
+      const { firstName, lastName, phone } = JSON.parse(event.body || '{}');
       
       const result = await query(
         `UPDATE Users SET 
-          FirstName = $1, LastName = $2, Phone = $3, Address = $4, District = $5, UpdatedAt = CURRENT_TIMESTAMP
-         WHERE Id = $6 RETURNING *`,
-        [firstName, lastName, phone, address, district, user.userId]
+          FirstName = $1, LastName = $2, Phone = $3, UpdatedAt = CURRENT_TIMESTAMP
+         WHERE Id = $4 RETURNING *`,
+        [firstName, lastName, phone, user.userId]
       );
 
       return {

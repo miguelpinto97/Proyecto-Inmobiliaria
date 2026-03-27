@@ -33,22 +33,22 @@ const PropertyForm: React.FC = () => {
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
-      operationType: 'Venta',
-      propertyType: '',
+      operationTypeId: 0,
+      propertyTypeId: 0,
       price: '',
       area: '',
-      district: '',
+      districtId: 0,
       address: '',
       rooms: 0,
       bathrooms: 0,
       parkingSpots: 0,
       floorNumber: 0,
-      hasElevator: false,
       description: '',
       latitude: null as number | null,
       longitude: null as number | null,
       isAddressPublic: true,
-      reference: ''
+      reference: '',
+      featureIds: [] as number[]
     }
   });
 
@@ -70,22 +70,22 @@ const PropertyForm: React.FC = () => {
           const res = await propertyService.getById(id);
           const p = res.data;
           reset({
-            operationType: p.operationtype,
-            propertyType: p.propertytype,
+            operationTypeId: p.operationtypeid,
+            propertyTypeId: p.propertytypeid,
             price: p.price,
             area: p.area,
-            district: p.district,
+            districtId: p.districtid,
             address: p.address,
             rooms: p.rooms,
             bathrooms: p.bathrooms,
             parkingSpots: p.parkingspots,
             floorNumber: p.floornumber,
-            hasElevator: p.haselevator,
             description: p.description,
             latitude: p.latitude,
             longitude: p.longitude,
             isAddressPublic: p.isaddresspublic !== undefined ? p.isaddresspublic : true,
-            reference: p.reference || ''
+            reference: p.reference || '',
+            featureIds: p.features?.map((f: any) => f.id) || []
           });
           if (p.latitude && p.longitude) {
             setIsLockedToMap(true);
@@ -106,7 +106,8 @@ const PropertyForm: React.FC = () => {
     }
   }, [id, reset, isProfileComplete, navigate]);
 
-  const propertyType = watch('propertyType');
+  const propertyTypeId = watch('propertyTypeId');
+  const propertyType = values?.TipoInmueble?.find((v: any) => v.id === Number(propertyTypeId))?.codigo;
 
   useEffect(() => {
     if (propertyType === 'Terreno') {
@@ -114,7 +115,6 @@ const PropertyForm: React.FC = () => {
       setValue('bathrooms', 0);
       setValue('parkingSpots', 0);
       setValue('floorNumber', 0);
-      setValue('hasElevator', false);
     }
   }, [propertyType, setValue]);
 
@@ -183,7 +183,15 @@ const PropertyForm: React.FC = () => {
       }
 
       // 2. Send to backend
-      const payload = { ...data, images: finalImageUrls };
+      const payload = { 
+        ...data, 
+        operationTypeId: Number(data.operationTypeId),
+        propertyTypeId: Number(data.propertyTypeId),
+        districtId: Number(data.districtId),
+        featureIds: (data.featureIds || []).map(Number),
+        images: finalImageUrls 
+      };
+
       if (id) {
         await propertyService.update(id, payload);
       } else {
@@ -223,12 +231,12 @@ const PropertyForm: React.FC = () => {
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Tipo de Operación</label>
               <div className="flex flex-wrap gap-2">
                 {values?.TipoOperacion?.map((v: any) => {
-                  const isSelected = watch('operationType') === v.codigo;
+                  const isSelected = watch('operationTypeId') === v.id;
                   return (
                     <button
-                      key={v.codigo}
+                      key={v.id}
                       type="button"
-                      onClick={() => setValue('operationType', v.codigo)}
+                      onClick={() => setValue('operationTypeId', v.id)}
                       className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${isSelected
                         ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100'
                         : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
@@ -245,12 +253,12 @@ const PropertyForm: React.FC = () => {
               <label className="text-sm font-black uppercase tracking-widest text-slate-400">Tipo de Inmueble</label>
               <div className="flex flex-wrap gap-2">
                 {values?.TipoInmueble?.map((v: any) => {
-                  const isSelected = watch('propertyType') === v.codigo;
+                  const isSelected = watch('propertyTypeId') === v.id;
                   return (
                     <button
-                      key={v.codigo}
+                      key={v.id}
                       type="button"
-                      onClick={() => setValue('propertyType', v.codigo)}
+                      onClick={() => setValue('propertyTypeId', v.id)}
                       className={`px-4 py-2 rounded-xl text-xs font-black transition-all border-2 ${isSelected
                         ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100'
                         : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
@@ -354,13 +362,13 @@ const PropertyForm: React.FC = () => {
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <select
-                    {...register('district', { required: true })}
+                    {...register('districtId', { required: true })}
                     disabled={isLockedToMap}
                     className={`w-full pl-10 pr-10 py-3 rounded-xl border ${isLockedToMap ? 'border-blue-100 bg-blue-50/30' : 'border-slate-200 bg-slate-50'} outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer text-sm ${isLockedToMap ? 'cursor-not-allowed opacity-70' : ''}`}
                   >
                     <option value="">Selecciona un distrito</option>
                     {values?.Distrito?.map((v: any) => (
-                      <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
+                      <option key={v.id} value={v.id}>{v.descripcion}</option>
                     ))}
                   </select>
                 </div>
@@ -408,7 +416,7 @@ const PropertyForm: React.FC = () => {
             </div>
           )}
 
-          {watch('propertyType') !== 'Terreno' && (
+          {propertyType !== 'Terreno' && (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 md:p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <div className="flex flex-col gap-1.5">
@@ -441,13 +449,39 @@ const PropertyForm: React.FC = () => {
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 cursor-pointer hover:bg-emerald-50 transition-all">
-                <div className="relative inline-flex items-center">
-                  <input type="checkbox" {...register('hasElevator')} className="sr-only peer" />
-                  <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              <div className="flex flex-col gap-3">
+                <label className="text-sm font-black uppercase tracking-widest text-slate-400">Características Adicionales</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {values?.Caracteristica?.map((v: any) => {
+                    const featureIds = watch('featureIds') || [];
+                    const isSelected = featureIds.includes(v.id);
+                    return (
+                      <label
+                        key={v.id}
+                        className={`flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${
+                          isSelected ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm' : 'bg-white border-slate-100 text-slate-600 hover:border-emerald-200'
+                        }`}
+                      >
+                        <div className="relative inline-flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const newIds = e.target.checked
+                                ? [...featureIds, v.id]
+                                : featureIds.filter((fid: number) => fid !== v.id);
+                              setValue('featureIds', newIds);
+                            }}
+                            className="sr-only peer"
+                          />
+                          <div className="w-8 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </div>
+                        <span className="font-bold text-xs">{v.descripcion}</span>
+                      </label>
+                    );
+                  })}
                 </div>
-                <span className="font-bold text-slate-700 text-sm">¿Cuenta con ascensor?</span>
-              </label>
+              </div>
             </>
           )}
 
@@ -666,7 +700,10 @@ const PropertyForm: React.FC = () => {
                       : tempMapData.address;
                     setValue('address', finalAddress);
                     if (tempMapData.districtCode) {
-                      setValue('district', tempMapData.districtCode);
+                      const districtMatch = values?.Distrito?.find((d: any) => d.codigo === tempMapData.districtCode);
+                      if (districtMatch) {
+                        setValue('districtId', districtMatch.id);
+                      }
                     }
                     setIsLockedToMap(true);
                     setLocationMethod('map'); // Set method to map on confirmation

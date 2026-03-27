@@ -12,8 +12,9 @@ const RequirementForm: React.FC = () => {
 
   const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
-      operationType: 'Venta',
-      propertyType: 'Departamento',
+      operationTypeId: 0,
+      propertyTypeId: 0,
+      districtId: 0,
       minPrice: '' as any,
       maxPrice: '' as any,
       minArea: '' as any,
@@ -24,7 +25,8 @@ const RequirementForm: React.FC = () => {
     }
   });
 
-  const propertyType = watch('propertyType');
+  const propertyTypeId = watch('propertyTypeId');
+  const propertyType = values?.TipoInmueble?.find((v: any) => v.id === Number(propertyTypeId))?.codigo;
 
   // Reset fields when propertyType is Terreno
   useEffect(() => {
@@ -74,12 +76,12 @@ const RequirementForm: React.FC = () => {
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">¿Qué tipo de operación buscas?</label>
               <div className="flex flex-wrap gap-2">
                 {values?.TipoOperacion?.map((v: any) => {
-                  const isSelected = watch('operationType') === v.codigo;
+                  const isSelected = watch('operationTypeId') === v.id;
                   return (
                     <button
-                      key={v.codigo}
+                      key={v.id}
                       type="button"
-                      onClick={() => setValue('operationType', v.codigo)}
+                      onClick={() => setValue('operationTypeId', v.id)}
                       className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all border-2 interactive-card ${isSelected
                         ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
                         : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
@@ -97,12 +99,12 @@ const RequirementForm: React.FC = () => {
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">Tipo de Inmueble</label>
               <div className="flex flex-wrap gap-2">
                 {values?.TipoInmueble?.map((v: any) => {
-                  const isSelected = watch('propertyType') === v.codigo;
+                  const isSelected = watch('propertyTypeId') === v.id;
                   return (
                     <button
-                      key={v.codigo}
+                      key={v.id}
                       type="button"
-                      onClick={() => setValue('propertyType', v.codigo)}
+                      onClick={() => setValue('propertyTypeId', v.id)}
                       className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all border-2 interactive-card ${isSelected
                         ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
                         : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-blue-200'
@@ -150,6 +152,19 @@ const RequirementForm: React.FC = () => {
                   placeholder="Ej: 60"
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400">Distrito</label>
+              <select
+                {...register('districtId', { required: true })}
+                className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all appearance-none cursor-pointer"
+              >
+                <option value="">Cualquier distrito</option>
+                {values?.Distrito?.map((v: any) => (
+                  <option key={v.id} value={v.id}>{v.descripcion}</option>
+                ))}
+              </select>
             </div>
           </div>
 

@@ -45,7 +45,7 @@ const MatchingView: React.FC = () => {
           {requirementId ? (
             matches.map((p: any) => (
               <div key={p.id} className="relative">
-                <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-xs font-bold z-10 shadow-lg">
+                <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-black z-10 shadow-lg">
                   {Math.round(p.matchscore)}% Match
                 </div>
                 <PropertyCard property={p} />
@@ -53,32 +53,36 @@ const MatchingView: React.FC = () => {
             ))
           ) : (
             matches.map((r: any) => (
-              <div key={r.id} className="bg-white border border-border p-8 rounded-3xl shadow-sm hover:shadow-md transition-all">
+              <div key={r.id} className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all interactive-card">
                 <div className="flex justify-between items-start mb-6">
-                   <div className="bg-accent/10 text-accent p-3 rounded-2xl">
+                   <div className="bg-blue-50 text-blue-600 p-3 rounded-2xl">
                      <Users size={24} />
                    </div>
-                   <div className="bg-primary text-white px-3 py-1 rounded-full text-xs font-bold">
+                   <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black">
                      {Math.round(r.matchscore)}% Interés
                    </div>
                 </div>
-                <h3 className="text-xl font-bold mb-1">{r.firstname} {r.lastname}</h3>
-                <p className="text-sm text-text-muted mb-6 flex items-center gap-1"><Mail size={14} /> {r.email}</p>
+                <h3 className="text-xl font-black text-slate-900 mb-1">{r.firstname} {r.lastname}</h3>
+                <p className="text-sm text-slate-500 mb-6 flex items-center gap-1 font-medium"><Mail size={14} /> {r.email}</p>
                 
-                <div className="flex flex-col gap-3 py-4 border-y border-border mb-6 text-sm">
+                <div className="flex flex-col gap-3 py-4 border-y border-slate-50 mb-6 text-sm">
                   <div className="flex justify-between">
-                    <span className="font-bold">Busca:</span>
-                    <span>{r.operationtype}</span>
+                    <span className="font-black text-slate-400 uppercase text-[10px] tracking-widest">Busca:</span>
+                    <span className="font-bold text-slate-700">{r.property_type_desc} en {r.operation_desc}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-bold">Presupuesto:</span>
-                    <span>${Number(r.minprice).toLocaleString()} - ${Number(r.maxprice).toLocaleString()}</span>
+                    <span className="font-black text-slate-400 uppercase text-[10px] tracking-widest">Presupuesto:</span>
+                    <span className="font-bold text-slate-700">S/ {Number(r.maxprice).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-black text-slate-400 uppercase text-[10px] tracking-widest">Distrito:</span>
+                    <span className="font-bold text-slate-700">{r.district_desc}</span>
                   </div>
                 </div>
 
-                <a href={`mailto:${r.email}`} className="btn btn-primary w-full gap-2">
+                <a href={`mailto:${r.email}`} className="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-2xl font-black text-sm hover:bg-blue-600 hover:text-white transition-all group">
                    Contactar Comprador
-                   <ExternalLink size={16} />
+                   <ExternalLink size={16} className="transition-transform group-hover:translate-x-1" />
                 </a>
               </div>
             ))

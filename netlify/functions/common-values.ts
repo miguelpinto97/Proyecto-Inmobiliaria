@@ -8,7 +8,7 @@ export const handler: Handler = async (event) => {
 
   try {
     const result = await query(
-      'SELECT Tipo, Codigo, Descripcion, Orden FROM ValoresComunes WHERE Activo = TRUE ORDER BY Tipo, Orden'
+      'SELECT Id, Tipo, Codigo, Descripcion, Orden FROM ValoresComunes WHERE Activo = TRUE ORDER BY Tipo, Orden'
     );
     
     // Group by type

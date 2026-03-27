@@ -4,13 +4,11 @@ import { propertyService } from '../services/api';
 import { MapPin, Maximize, Bath, Bed, Info, CheckCircle2, Phone, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
-import { useCommonValues } from '../hooks/useCommonValues';
 
 const PropertyDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loginWithGoogle } = useAuth();
-  const { values } = useCommonValues();
   const [property, setProperty] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mainImage, setMainImage] = useState('');
@@ -70,12 +68,12 @@ const PropertyDetail: React.FC = () => {
           <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-50 flex flex-col gap-8">
             <div className="flex justify-between items-start">
               <div className="flex gap-2">
-                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${property.operationtype === 'Venta' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
-                  {property.operationtype}
+                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${property.operation_code === 'Venta' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
+                  {property.operation_desc}
                 </span>
-                {property.propertytype && (
+                {property.property_type_desc && (
                   <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-400 shadow-sm">
-                    {property.propertytype}
+                    {property.property_type_desc}
                   </span>
                 )}
               </div>
@@ -90,7 +88,7 @@ const PropertyDetail: React.FC = () => {
               <div className="flex items-center gap-3">
                 <MapPin className="text-blue-500 shrink-0" size={20} />
                 <span className="font-bold text-slate-600 text-sm leading-tight">
-                  {values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}
+                  {property.district_desc}
                   {property.isaddresspublic !== false 
                     ? `, ${property.address}${property.reference ? ` (${property.reference})` : ''}` 
                     : ` - ${property.reference || 'Dirección Reservada'}`}
@@ -99,7 +97,7 @@ const PropertyDetail: React.FC = () => {
               <a 
                 href={property.latitude && property.longitude 
                   ? `https://www.google.com/maps?q=loc:${parseFloat(String(property.latitude))},${parseFloat(String(property.longitude))}`
-                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}, Lima, Peru`)}`
+                  : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.district_desc}, Lima, Peru`)}`
                 }
                 target="_blank"
                 rel="noopener noreferrer"
@@ -158,20 +156,22 @@ const PropertyDetail: React.FC = () => {
                Características
              </h3>
              <ul className="space-y-3">
-               <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
-                 <CheckCircle2 size={18} className="text-blue-400" /> 
-                 {property.parkingspots} Estacionamiento(s)
-               </li>
+                {property.parkingspots > 0 && (
+                  <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
+                    <CheckCircle2 size={18} className="text-blue-400" /> 
+                    {property.parkingspots} Estacionamiento(s)
+                  </li>
+                )}
                <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
                  <CheckCircle2 size={18} className="text-blue-400" /> 
                  Piso: {property.floornumber}
                </li>
-               {property.haselevator && (
-                 <li className="flex items-center gap-3 text-slate-300 font-bold text-sm">
-                   <CheckCircle2 size={18} className="text-blue-400" /> 
-                   Cuenta con Ascensor
+               {property.features?.map((f: any) => (
+                 <li key={f.featureid} className="flex items-center gap-3 text-slate-300 font-bold text-sm">
+                    <CheckCircle2 size={18} className="text-blue-400" /> 
+                    {f.descripcion}
                  </li>
-               )}
+               ))}
              </ul>
           </div>
         </div>

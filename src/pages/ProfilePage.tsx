@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { userService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useCommonValues } from '../hooks/useCommonValues';
-import { User as UserIcon, Phone, MapPin, Home, Save, Loader2, ChevronLeft, CheckCircle } from 'lucide-react';
+import { User as UserIcon, Phone, Mail, Save, Loader2, ChevronLeft, CheckCircle } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-  const { values } = useCommonValues();
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -17,9 +15,7 @@ const ProfilePage: React.FC = () => {
     defaultValues: {
       firstName: user?.firstname || '',
       lastName: user?.lastname || '',
-      phone: user?.phone || '',
-      address: user?.address || '',
-      district: user?.district || ''
+      phone: user?.phone || ''
     }
   });
 
@@ -28,9 +24,7 @@ const ProfilePage: React.FC = () => {
       reset({
         firstName: user.firstname,
         lastName: user.lastname,
-        phone: user.phone || '',
-        address: user.address || '',
-        district: user.district || ''
+        phone: user.phone || ''
       });
     }
   }, [user, reset]);
@@ -105,35 +99,20 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-black uppercase tracking-widest text-slate-400">Distrito</label>
-            <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <select 
-                {...register('district', { required: true })} 
-                className="w-full pl-12 pr-10 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold text-slate-700 transition-all appearance-none cursor-pointer"
-              >
-                <option value="">Selecciona un distrito</option>
-                {values?.Distrito?.map((v: any) => (
-                  <option key={v.codigo} value={v.codigo}>{v.descripcion}</option>
-                ))}
-              </select>
-            </div>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-black uppercase tracking-widest text-slate-400">Dirección de Residencia</label>
-          <div className="relative">
-            <Home className="absolute left-4 top-4 text-slate-400" size={18} />
-            <textarea 
-              {...register('address', { required: true })} 
-              rows={3} 
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-bold text-slate-700 transition-all resize-none"
-              placeholder="Tu dirección completa..."
-            ></textarea>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-black uppercase tracking-widest text-slate-400">Correo Electrónico</label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-100 bg-slate-50 font-bold text-slate-400 outline-none cursor-not-allowed"
+              />
+            </div>
           </div>
-        </div>
 
         <button 
           type="submit" 

@@ -7,30 +7,61 @@ export const handler: Handler = async (event) => {
   const method = event.httpMethod;
 
   try {
-    // GET: List properties (public if approved, or owner's properties, or all if admin)
+    // GET: List properties
     if (method === 'GET') {
       const { 
         id, owner, status, my, 
-        operationType: opType, propertyType, 
+        operationTypeId, propertyTypeId, 
         minPrice, maxPrice, 
-        district, rooms, bathrooms,
+        districtId, rooms, bathrooms, featureIds,
         page = 1, limit = 10 
       } = event.queryStringParameters || {};
       const offset = (Number(page) - 1) * Number(limit);
 
       if (id) {
-        const result = await query('SELECT * FROM Properties WHERE Id = $1', [id]);
+        const result = await query(`
+          SELECT p.*, 
+                 v1.Descripcion as operation_desc, v1.Codigo as operation_code,
+                 v2.Descripcion as property_type_desc, v2.Codigo as property_type_code,
+                 v3.Descripcion as district_desc, v3.Codigo as district_code,
+                 v4.Descripcion as status_desc, v4.Codigo as status_code
+          FROM Properties p
+          LEFT JOIN ValoresComunes v1 ON p.OperationTypeId = v1.Id
+          LEFT JOIN ValoresComunes v2 ON p.PropertyTypeId = v2.Id
+          LEFT JOIN ValoresComunes v3 ON p.DistrictId = v3.Id
+          LEFT JOIN ValoresComunes v4 ON p.StatusId = v4.Id
+          WHERE p.Id = $1`, [id]);
+          
         if (result.rows.length === 0) return { statusCode: 404, body: 'Not Found' };
         
         const images = await query('SELECT * FROM PropertyImages WHERE PropertyId = $1 ORDER BY Orden', [id]);
+        const features = await query(`
+          SELECT v.Id, v.Descripcion, v.Codigo 
+          FROM PropertyFeatures pf
+          JOIN ValoresComunes v ON pf.FeatureId = v.Id
+          WHERE pf.PropertyId = $1`, [id]);
+
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...result.rows[0], images: images.rows }),
+          body: JSON.stringify({ ...result.rows[0], images: images.rows, features: features.rows }),
         };
       }
 
-      let sql = 'SELECT p.*, (SELECT ImageUrl FROM PropertyImages WHERE PropertyId = p.Id ORDER BY Orden LIMIT 1) as mainimage FROM Properties p WHERE 1=1';
+      let sql = `
+        SELECT p.*, 
+               v1.Codigo as operation_code,
+               v2.Codigo as property_type_code,
+               v3.Descripcion as district_desc,
+               v4.Descripcion as status_desc,
+               v4.Codigo as status_code,
+               (SELECT ImageUrl FROM PropertyImages WHERE PropertyId = p.Id ORDER BY Orden LIMIT 1) as mainimage 
+        FROM Properties p
+        LEFT JOIN ValoresComunes v1 ON p.OperationTypeId = v1.Id
+        LEFT JOIN ValoresComunes v2 ON p.PropertyTypeId = v2.Id
+        LEFT JOIN ValoresComunes v3 ON p.DistrictId = v3.Id
+        LEFT JOIN ValoresComunes v4 ON p.StatusId = v4.Id
+        WHERE 1=1`;
       const params: any[] = [];
 
       // Logic for filtering
@@ -42,25 +73,44 @@ export const handler: Handler = async (event) => {
       } else {
         // General search or Admin search
         if (!isAdmin(user)) {
-          sql += ' AND p.Status = \'Aprobada\'';
+          // Find 'Aprobada' status ID
+          const statusResult = await query('SELECT Id FROM ValoresComunes WHERE Tipo = \'EstadoPropiedad\' AND Codigo = \'Aprobada\'');
+          const approvedId = statusResult.rows[0]?.id;
+          if (approvedId) {
+            sql += ' AND p.StatusId = $' + (params.length + 1);
+            params.push(approvedId);
+          }
         } else if (status) {
-          sql += ' AND p.Status = $' + (params.length + 1);
-          params.push(status);
+          if (isNaN(Number(status))) {
+            const statusResult = await query('SELECT Id FROM ValoresComunes WHERE Tipo = \'EstadoPropiedad\' AND Codigo = $1', [status]);
+            const foundStatusId = statusResult.rows[0]?.id || statusResult.rows[0]?.Id;
+            if (foundStatusId) {
+              sql += ' AND p.StatusId = $' + (params.length + 1);
+              params.push(foundStatusId);
+            } else {
+              // If status name not found, force empty result or ignore?
+              // Let's force empty result by adding a condition that never meets
+              sql += ' AND 1=0';
+            }
+          } else {
+            sql += ' AND p.StatusId = $' + (params.length + 1);
+            params.push(Number(status));
+          }
         }
 
         // Apply filters
-        if (opType) {
-          const types = opType.split(',');
-          sql += ' AND p.OperationType = ANY($' + (params.length + 1) + ')';
-          params.push(types);
+        if (operationTypeId) {
+          const ids = operationTypeId.split(',').map(Number);
+          sql += ' AND p.OperationTypeId = ANY($' + (params.length + 1) + ')';
+          params.push(ids);
         }
-        if (propertyType) {
-          sql += ' AND p.PropertyType = $' + (params.length + 1);
-          params.push(propertyType);
+        if (propertyTypeId) {
+          sql += ' AND p.PropertyTypeId = $' + (params.length + 1);
+          params.push(Number(propertyTypeId));
         }
-        if (district) {
-          sql += ' AND p.District = $' + (params.length + 1);
-          params.push(district);
+        if (districtId) {
+          sql += ' AND p.DistrictId = $' + (params.length + 1);
+          params.push(Number(districtId));
         }
         if (minPrice) {
           sql += ' AND p.Price >= $' + (params.length + 1);
@@ -77,6 +127,19 @@ export const handler: Handler = async (event) => {
         if (bathrooms) {
           sql += ' AND p.Bathrooms >= $' + (params.length + 1);
           params.push(Number(bathrooms));
+        }
+        if (featureIds) {
+          const fIds = featureIds.split(',').map(Number).filter((fid: number) => !isNaN(fid));
+          if (fIds.length > 0) {
+            sql += ` AND p.Id IN (
+              SELECT PropertyId 
+              FROM PropertyFeatures 
+              WHERE FeatureId = ANY($${params.length + 1}) 
+              GROUP BY PropertyId 
+              HAVING COUNT(DISTINCT FeatureId) = $${params.length + 2}
+            )`;
+            params.push(fIds, fIds.length);
+          }
         }
       }
 
@@ -98,37 +161,34 @@ export const handler: Handler = async (event) => {
     if (method === 'POST') {
       const body = JSON.parse(event.body || '{}');
       const { 
-        operationType, propertyType, price, area, district, address, 
-        rooms, bathrooms, parkingSpots, floorNumber, hasElevator, 
+        operationTypeId, propertyTypeId, price, area, districtId, address, 
+        rooms, bathrooms, parkingSpots, floorNumber, featureIds, 
         description, images, latitude, longitude, isAddressPublic, reference 
       } = body;
 
-      // Profile completeness check (Fetch from DB for latest data)
-      const currentUserResult = await query('SELECT Phone, Address FROM Users WHERE Id = $1', [user.userId]);
-      const currentUser = currentUserResult.rows[0];
+      // Find 'Pendiente' status ID
+      const statusResult = await query('SELECT Id FROM ValoresComunes WHERE Tipo = \'EstadoPropiedad\' AND Codigo = \'Pendiente\'');
+      const pendienteId = statusResult.rows[0]?.id || statusResult.rows[0]?.Id; // Handle case sensitivity if any
 
-      if (!currentUser.phone || !currentUser.address) {
-        return { 
-          statusCode: 403, 
-          body: JSON.stringify({ error: 'Completa tu perfil antes de publicar.' }) 
-        };
-      }
-      
-      // Check limits
-      const userResult = await query('SELECT MaxProperties FROM Users WHERE Id = $1', [user.userId]);
-      const maxProps = userResult.rows[0].maxproperties;
-      const currentPropsResult = await query('SELECT COUNT(*) FROM Properties WHERE OwnerId = $1', [user.userId]);
-      if (Number(currentPropsResult.rows[0].count) >= maxProps) {
-        return { statusCode: 403, body: JSON.stringify({ error: 'Property limit reached' }) };
+      if (!pendienteId) {
+        throw new Error('No se encontró el estado "Pendiente" en ValoresComunes');
       }
 
       const result = await query(
-        `INSERT INTO Properties (OwnerId, OperationType, PropertyType, Price, Area, District, Address, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status, Latitude, Longitude, IsAddressPublic, Reference)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'Pendiente', $14, $15, $16, $17) RETURNING *`,
-        [user.userId, operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference]
+        `INSERT INTO Properties (OwnerId, OperationTypeId, PropertyTypeId, Price, Area, DistrictId, Address, Rooms, Bathrooms, ParkingSpots, FloorNumber, Description, StatusId, Latitude, Longitude, IsAddressPublic, Reference)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+        [user.userId, Number(operationTypeId), Number(propertyTypeId), Number(price), Number(area), Number(districtId), address, rooms, bathrooms, parkingSpots, floorNumber, description, pendienteId, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference]
       );
 
       const propertyId = result.rows[0].id;
+      
+      // Handle Features
+      if (featureIds && Array.isArray(featureIds)) {
+        for (const featureId of featureIds) {
+          await query('INSERT INTO PropertyFeatures (PropertyId, FeatureId) VALUES ($1, $2)', [propertyId, featureId]);
+        }
+      }
+
       if (images && images.length > 0) {
         for (let i = 0; i < images.length; i++) {
           await query(
@@ -150,35 +210,47 @@ export const handler: Handler = async (event) => {
       const { id } = event.queryStringParameters || {};
       if (!id) return { statusCode: 400, body: 'Missing ID' };
 
-      const existing = await query('SELECT OwnerId, OperationType FROM Properties WHERE Id = $1', [id]);
+      const existing = await query('SELECT OwnerId FROM Properties WHERE Id = $1', [id]);
       if (existing.rows.length === 0) return { statusCode: 404, body: 'Not Found' };
       const isOwner = existing.rows[0].ownerid === user.userId;
       if (!isOwner && !isAdmin(user)) return { statusCode: 403, body: 'Forbidden' };
 
       const body = JSON.parse(event.body || '{}');
       
-      // Handle Status Update (Owner can only set Alquilado/Vendido)
-      if (body.status && (isAdmin(user) || (isOwner && ['Alquilado', 'Vendido'].includes(body.status)))) {
-        if (!isAdmin(user)) {
-          const opType = existing.rows[0].operationtype;
-          if (body.status === 'Alquilado' && opType !== 'Alquiler') {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Solo propiedades en alquiler pueden marcarse como alquiladas.' }) };
-          }
-          if (body.status === 'Vendido' && opType !== 'Venta') {
-            return { statusCode: 400, body: JSON.stringify({ error: 'Solo propiedades en venta pueden marcarse como vendidas.' }) };
-          }
+      // Handle Status Update (using ID or Name)
+      const statusUpdate = body.statusId || body.status;
+      if (statusUpdate && (isAdmin(user) || isOwner)) {
+        let targetStatusId = statusUpdate;
+        if (isNaN(Number(statusUpdate))) {
+          const statusResult = await query('SELECT Id FROM ValoresComunes WHERE Tipo = \'EstadoPropiedad\' AND Codigo = $1', [statusUpdate]);
+          targetStatusId = statusResult.rows[0]?.id || statusResult.rows[0]?.Id;
         }
-        await query('UPDATE Properties SET Status = $1, UpdatedAt = CURRENT_TIMESTAMP WHERE Id = $2', [body.status, id]);
-        return { statusCode: 200, body: 'Status Updated' };
+        if (targetStatusId) {
+          await query('UPDATE Properties SET StatusId = $1, UpdatedAt = CURRENT_TIMESTAMP WHERE Id = $2', [Number(targetStatusId), id]);
+          return { statusCode: 200, body: 'Status Updated' };
+        }
       } 
       
-      // Handle Full Update (resets status to Pendiente)
-      const { operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, images, latitude, longitude, isAddressPublic, reference } = body;
+      // Handle Full Update
+      const { operationTypeId, propertyTypeId, price, area, districtId, address, rooms, bathrooms, parkingSpots, floorNumber, featureIds, description, images, latitude, longitude, isAddressPublic, reference } = body;
+      
+      // Find 'Pendiente' status ID for full updates (reset status)
+      const statusRes = await query('SELECT Id FROM ValoresComunes WHERE Tipo = \'EstadoPropiedad\' AND Codigo = \'Pendiente\'');
+      const pendienteId = statusRes.rows[0]?.id || statusRes.rows[0]?.Id;
+
       await query(
-        `UPDATE Properties SET OperationType = $1, PropertyType = $2, Price = $3, Area = $4, District = $5, Address = $6, Rooms = $7, Bathrooms = $8, ParkingSpots = $9, FloorNumber = $10, HasElevator = $11, Description = $12, Status = 'Pendiente', Latitude = $13, Longitude = $14, IsAddressPublic = $15, Reference = $16, UpdatedAt = CURRENT_TIMESTAMP
+        `UPDATE Properties SET OperationTypeId = $1, PropertyTypeId = $2, Price = $3, Area = $4, DistrictId = $5, Address = $6, Rooms = $7, Bathrooms = $8, ParkingSpots = $9, FloorNumber = $10, Description = $11, StatusId = $12, Latitude = $13, Longitude = $14, IsAddressPublic = $15, Reference = $16, UpdatedAt = CURRENT_TIMESTAMP
           WHERE Id = $17`,
-        [operationType, propertyType, price, area, district, address, rooms, bathrooms, parkingSpots, floorNumber, hasElevator, description, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference, id]
+        [Number(operationTypeId), Number(propertyTypeId), Number(price), Number(area), Number(districtId), address, Number(rooms), Number(bathrooms), Number(parkingSpots), Number(floorNumber), description, pendienteId, latitude, longitude, isAddressPublic !== undefined ? isAddressPublic : true, reference, id]
       );
+
+      // Update Features
+      if (featureIds && Array.isArray(featureIds)) {
+        await query('DELETE FROM PropertyFeatures WHERE PropertyId = $1', [id]);
+        for (const featureId of featureIds) {
+          await query('INSERT INTO PropertyFeatures (PropertyId, FeatureId) VALUES ($1, $2)', [id, featureId]);
+        }
+      }
 
       if (images && Array.isArray(images)) {
         await query('DELETE FROM PropertyImages WHERE PropertyId = $1', [id]);

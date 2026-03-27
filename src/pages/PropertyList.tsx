@@ -69,13 +69,14 @@ const PropertyList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [filters, setFilters] = useState({
-    operationType: '',
-    propertyType: '',
-    district: '',
+    operationTypeId: '',
+    propertyTypeId: '',
+    districtId: '',
     minPrice: '',
     maxPrice: '',
     rooms: '',
-    bathrooms: ''
+    bathrooms: '',
+    featureIds: ''
   });
 
   const fetchProperties = async () => {
@@ -93,49 +94,68 @@ const PropertyList: React.FC = () => {
     }
   };
 
-  const handleOperationTypeToggle = (type: string) => {
-    const currentTypes = filters.operationType ? filters.operationType.split(',') : [];
-    let newTypes;
-    if (currentTypes.includes(type)) {
-      newTypes = currentTypes.filter(t => t !== type);
+  const handleOperationTypeToggle = (id: number) => {
+    const currentIds = filters.operationTypeId ? filters.operationTypeId.split(',').map(Number) : [];
+    let newIds;
+    if (currentIds.includes(id)) {
+      newIds = currentIds.filter(t => t !== id);
     } else {
-      newTypes = [...currentTypes, type];
+      newIds = [...currentIds, id];
     }
-    // Si cambia el tipo de operación, reiniciamos el rango de precio
-    setFilters({ 
-      ...filters, 
-      operationType: newTypes.join(','),
+    setFilters({
+      ...filters,
+      operationTypeId: newIds.join(','),
       minPrice: '',
       maxPrice: ''
     });
   };
 
-  const handlePropertyTypeToggle = (type: string) => {
-    const currentTypes = filters.propertyType ? filters.propertyType.split(',') : [];
-    let newTypes;
-    if (currentTypes.includes(type)) {
-      newTypes = currentTypes.filter(t => t !== type);
+  const handlePropertyTypeToggle = (id: number) => {
+    const currentIds = filters.propertyTypeId ? filters.propertyTypeId.split(',').map(Number) : [];
+    let newIds;
+    if (currentIds.includes(id)) {
+      newIds = currentIds.filter(t => t !== id);
     } else {
-      newTypes = [...currentTypes, type];
+      newIds = [...currentIds, id];
     }
-    setFilters({ ...filters, propertyType: newTypes.join(',') });
+    setFilters({ ...filters, propertyTypeId: newIds.join(',') });
   };
 
-  const priceLimit = (filters.operationType.split(',').includes('Alquiler') && !filters.operationType.split(',').includes('Venta')) ? 5000 : 1000000;
+  const handleFeatureToggle = (id: number) => {
+    const currentIds = filters.featureIds ? filters.featureIds.split(',').map(Number) : [];
+    let newIds;
+    if (currentIds.includes(id)) {
+      newIds = currentIds.filter(f => f !== id);
+    } else {
+      newIds = [...currentIds, id];
+    }
+    setFilters({ ...filters, featureIds: newIds.join(',') });
+  };
+
+  // Check if any selected operation is 'Alquiler' (assuming its ID or check values? but let's keep it simple for now)
+  // To be safe, let's keep the logic if we can find the code
+  const isRentOnly = filters.operationTypeId.split(',').some(id =>
+    values?.TipoOperacion?.find((v: any) => v.id === Number(id))?.codigo === 'Alquiler'
+  );
+  const isSaleOnly = filters.operationTypeId.split(',').some(id =>
+    values?.TipoOperacion?.find((v: any) => v.id === Number(id))?.codigo === 'Venta'
+  );
+  const priceLimit = (isRentOnly && !isSaleOnly) ? 5000 : 1000000;
 
   useEffect(() => {
     fetchProperties();
-  }, [filters.operationType, filters.propertyType, filters.district]);
+  }, [filters.operationTypeId, filters.propertyTypeId, filters.districtId, filters.featureIds]);
 
   const clearFilters = () => {
     setFilters({
-      operationType: '',
-      propertyType: '',
-      district: '',
+      operationTypeId: '',
+      propertyTypeId: '',
+      districtId: '',
       minPrice: '',
       maxPrice: '',
       rooms: '',
-      bathrooms: ''
+      bathrooms: '',
+      featureIds: ''
     });
   };
 
@@ -186,11 +206,11 @@ const PropertyList: React.FC = () => {
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Operación</label>
             <div className="flex flex-wrap gap-2">
               {values?.TipoOperacion?.map((v: any) => {
-                const isActive = filters.operationType.split(',').includes(v.codigo);
+                const isActive = filters.operationTypeId.split(',').includes(String(v.id));
                 return (
                   <button
-                    key={v.codigo}
-                    onClick={() => handleOperationTypeToggle(v.codigo)}
+                    key={v.id}
+                    onClick={() => handleOperationTypeToggle(v.id)}
                     className={`
                       px-4 py-2 rounded-xl text-xs font-black transition-all border-2
                       ${isActive
@@ -210,11 +230,11 @@ const PropertyList: React.FC = () => {
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inmueble</label>
             <div className="flex flex-wrap gap-2">
               {values?.TipoInmueble?.map((v: any) => {
-                const isActive = filters.propertyType.split(',').includes(v.codigo);
+                const isActive = filters.propertyTypeId.split(',').includes(String(v.id));
                 return (
                   <button
-                    key={v.codigo}
-                    onClick={() => handlePropertyTypeToggle(v.codigo)}
+                    key={v.id}
+                    onClick={() => handlePropertyTypeToggle(v.id)}
                     className={`
                       px-4 py-2 rounded-xl text-xs font-black transition-all border-2
                       ${isActive
@@ -237,7 +257,7 @@ const PropertyList: React.FC = () => {
                 type="text"
                 placeholder="Buscar distrito..."
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
-                value={filters.district ? (values?.Distrito?.find((d: any) => d.codigo === filters.district)?.descripcion || '') : ''}
+                value={filters.districtId ? (values?.Distrito?.find((d: any) => d.id === Number(filters.districtId))?.descripcion || '') : ''}
                 readOnly
                 onClick={(e) => {
                   const el = e.currentTarget.nextElementSibling as HTMLElement;
@@ -263,7 +283,7 @@ const PropertyList: React.FC = () => {
                 <div className="p-1">
                   <button
                     onClick={() => {
-                      setFilters({ ...filters, district: '' });
+                      setFilters({ ...filters, districtId: '' });
                       document.querySelectorAll('.group\\/district div.absolute').forEach(el => el.classList.add('hidden'));
                     }}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-50"
@@ -272,9 +292,9 @@ const PropertyList: React.FC = () => {
                   </button>
                   {values?.Distrito?.map((v: any) => (
                     <button
-                      key={v.codigo}
+                      key={v.id}
                       onClick={() => {
-                        setFilters({ ...filters, district: v.codigo });
+                        setFilters({ ...filters, districtId: String(v.id) });
                         document.querySelectorAll('.group\\/district div.absolute').forEach(el => el.classList.add('hidden'));
                       }}
                       className="w-full text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-all active:scale-[0.98]"
@@ -286,6 +306,7 @@ const PropertyList: React.FC = () => {
               </div>
             </div>
           </div>
+
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rango de Precio</label>
@@ -319,6 +340,31 @@ const PropertyList: React.FC = () => {
               />
             </div>
           </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Características</label>
+            <div className="flex flex-wrap gap-2">
+              {values?.Caracteristica?.map((v: any) => {
+                const isActive = (filters.featureIds || '').split(',').includes(String(v.id));
+                return (
+                  <button
+                    key={v.id}
+                    onClick={() => handleFeatureToggle(v.id)}
+                    className={`
+                      px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all border-2
+                      ${isActive
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
+                        : 'bg-slate-50 border-slate-50 text-slate-400 hover:border-slate-200'}
+                      active:scale-95
+                    `}
+                  >
+                    {v.descripcion}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+
         </div>
 
         <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">

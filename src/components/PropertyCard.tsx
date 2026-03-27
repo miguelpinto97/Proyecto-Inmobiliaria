@@ -6,34 +6,33 @@ import { useCommonValues } from '../hooks/useCommonValues';
 interface PropertyProps {
   property: {
     id: number;
-    operationtype: string;
-    propertytype: string;
+    operation_code: string;
+    property_type_code: string;
     price: number;
     area: number;
-    district: string;
+    district_desc: string;
     address: string;
     locationtext?: string;
     rooms: number;
     bathrooms: number;
     mainimage?: string;
-    status: string;
+    status_code: string;
+    status_desc: string;
     latitude?: number;
     longitude?: number;
     isaddresspublic?: boolean;
     reference?: string;
+    features?: { id: number; descripcion: string; codigo: string }[];
   };
   showStatus?: boolean;
   onEdit?: (id: number) => void;
   onDelete?: (id: number) => void;
-  onStatusChange?: (id: number, status: string) => void;
+  onStatusChange?: (id: number, statusId: number) => void;
 }
 
 const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, onDelete, onStatusChange }) => {
   const { values } = useCommonValues();
 
-  const getStatusLabel = (code: string) => {
-    return values?.EstadoPropiedad?.find((v: any) => v.codigo === code)?.descripcion || code;
-  };
   return (
     <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col h-full interactive-card group">
       <div className="relative h-56 overflow-hidden m-3 mb-0 rounded-[2rem]">
@@ -43,20 +42,20 @@ const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, o
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
         <div className="absolute top-4 left-4 flex flex-col gap-2">
-          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${property.operationtype === 'Venta' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
-            {property.operationtype}
+          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${property.operation_code === 'Venta' ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
+            {property.operation_code}
           </span>
-          {property.propertytype && (
+          {property.property_type_code && (
             <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg bg-white text-slate-900">
-              {property.propertytype}
+              {property.property_type_code}
             </span>
           )}
           {showStatus && (
-            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${property.status === 'Aprobada' ? 'bg-emerald-100 text-emerald-600' :
-              property.status === 'Rechazada' ? 'bg-red-100 text-red-600' :
+            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${property.status_code === 'Aprobada' ? 'bg-emerald-100 text-emerald-600' :
+              property.status_code === 'Rechazada' ? 'bg-red-100 text-red-600' :
                 'bg-amber-100 text-amber-600'
               }`}>
-              {getStatusLabel(property.status)}
+              {property.status_desc}
             </span>
           )}
         </div>
@@ -73,7 +72,7 @@ const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, o
           <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
           <div className="flex flex-col">
             <span className="text-sm font-black text-slate-700 leading-tight">
-              {values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}
+              {property.district_desc}
             </span>
             <span className="text-xs font-medium text-slate-400 line-clamp-1">
               {property.isaddresspublic !== false
@@ -98,6 +97,20 @@ const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, o
           </div>
         </div>
 
+        {/* Features Preview */}
+        {property.features && property.features.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {property.features.slice(0, 3).map(f => (
+              <span key={f.id} className="text-[8px] font-bold bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full border border-slate-100">
+                {f.descripcion}
+              </span>
+            ))}
+            {property.features.length > 3 && (
+              <span className="text-[8px] font-bold text-slate-400 px-1">+ {property.features.length - 3}</span>
+            )}
+          </div>
+        )}
+
         <div className="mt-auto flex flex-col gap-3">
           <div className="grid grid-cols-5 gap-2">
             <Link
@@ -110,7 +123,7 @@ const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, o
             <a
               href={property.latitude && property.longitude
                 ? `https://www.google.com/maps?q=loc:${parseFloat(String(property.latitude))},${parseFloat(String(property.longitude))}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${values?.Distrito?.find((v: any) => v.codigo === property.district)?.descripcion || property.district}, Lima, Peru`)}`
+                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${property.address}, ${property.district_desc}, Lima, Peru`)}`
               }
               target="_blank"
               rel="noopener noreferrer"
@@ -133,13 +146,17 @@ const PropertyCard: React.FC<PropertyProps> = ({ property, showStatus, onEdit, o
                   Editar
                 </button>
               )}
-              {onStatusChange && (property.status === 'Aprobada' || property.status === 'Pendiente') && (
+              {onStatusChange && (property.status_code === 'Aprobada' || property.status_code === 'Pendiente') && (
                 <button
-                  onClick={() => onStatusChange(property.id, property.operationtype === 'Venta' ? 'Vendido' : 'Alquilado')}
+                  onClick={() => {
+                    const statusCode = property.operation_code === 'Venta' ? 'Vendido' : 'Alquilado';
+                    const statusVal = values?.EstadoPropiedad?.find((v: any) => v.codigo === statusCode);
+                    if (statusVal) onStatusChange(property.id, statusVal.id);
+                  }}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[10px] uppercase tracking-wider hover:bg-emerald-600 hover:text-white transition-all"
                 >
                   <CheckCircle size={14} />
-                  {property.operationtype === 'Venta' ? 'Vendido' : 'Alquilado'}
+                  {property.operation_code === 'Venta' ? 'Vendido' : 'Alquilado'}
                 </button>
               )}
               {onDelete && (

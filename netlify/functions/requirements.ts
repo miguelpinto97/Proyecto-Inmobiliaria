@@ -10,7 +10,18 @@ export const handler: Handler = async (event) => {
 
   try {
     if (method === 'GET') {
-      const result = await query('SELECT * FROM BuyerRequirements WHERE UserId = $1 ORDER BY CreatedAt DESC', [user.userId]);
+      const result = await query(`
+        SELECT r.*, 
+               v1.Descripcion as operation_desc, v1.Codigo as operation_code,
+               v2.Descripcion as property_type_desc, v2.Codigo as property_type_code,
+               v3.Descripcion as district_desc, v3.Codigo as district_code
+        FROM BuyerRequirements r
+        LEFT JOIN ValoresComunes v1 ON r.OperationTypeId = v1.Id
+        LEFT JOIN ValoresComunes v2 ON r.PropertyTypeId = v2.Id
+        LEFT JOIN ValoresComunes v3 ON r.DistrictId = v3.Id
+        WHERE r.UserId = $1 
+        ORDER BY r.CreatedAt DESC`, [user.userId]);
+        
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -21,8 +32,9 @@ export const handler: Handler = async (event) => {
     if (method === 'POST') {
       const body = JSON.parse(event.body || '{}');
       const { 
-        operationType, 
-        propertyType,
+        operationTypeId, 
+        propertyTypeId,
+        districtId,
         minPrice, 
         maxPrice, 
         minArea, 
@@ -37,13 +49,13 @@ export const handler: Handler = async (event) => {
 
       const result = await query(
         `INSERT INTO BuyerRequirements (
-          UserId, OperationType, PropertyType, MinPrice, MaxPrice, MinArea, 
+          UserId, OperationTypeId, PropertyTypeId, DistrictId, MinPrice, MaxPrice, MinArea, 
           ParkingRequired, FloorPreference, ElevatorRequired, MinRooms, 
           MinBathrooms, HasSala, HasComedor
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
         [
-          user.userId, operationType, propertyType, minPrice, maxPrice, minArea, 
+          user.userId, operationTypeId, propertyTypeId, districtId, minPrice, maxPrice, minArea, 
           parkingRequired, floorPreference, elevatorRequired, minRooms, 
           minBathrooms, hasSala, hasComedor
         ]

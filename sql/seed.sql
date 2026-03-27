@@ -50,19 +50,3 @@ INSERT INTO ValoresComunes (Tipo, Codigo, Descripcion, Orden) VALUES ('Distrito'
 INSERT INTO ValoresComunes (Tipo, Codigo, Descripcion, Orden) VALUES ('Distrito', 'VillaElSalvador', 'Villa El Salvador', 19) ON CONFLICT (Tipo, Codigo) DO NOTHING;
 INSERT INTO ValoresComunes (Tipo, Codigo, Descripcion, Orden) VALUES ('Distrito', 'SanJuanDeMiraflores', 'San Juan de Miraflores', 20) ON CONFLICT (Tipo, Codigo) DO NOTHING;
 
--- Initial User for testing
-INSERT INTO Users (FirstName, LastName, Email, Phone, PlanId, MaxProperties) 
-VALUES ('Test', 'User', 'miguelpinto.dev@gmail.com', '999888777', 3, 50)
-ON CONFLICT (Email) DO NOTHING;
-
--- Sample Property
-INSERT INTO Properties (OwnerId, OperationType, PropertyType, Price, Area, LocationText, Rooms, Bathrooms, ParkingSpots, FloorNumber, HasElevator, Description, Status, IsFeatured)
-SELECT Id, 'Venta', 'Departamento', 250000, 120, 'Miraflores, Lima', 3, 2, 1, 5, TRUE, 'Hermoso departamento con vista al mar.', 'Aprobada', TRUE
-FROM Users WHERE Email = 'miguelpinto.dev@gmail.com'
-LIMIT 1;
-
--- Sample Image
-INSERT INTO PropertyImages (PropertyId, ImageUrl, PublicId, Orden)
-SELECT Id, 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&q=80&w=1000', 'sample_1', 1
-FROM Properties WHERE LocationText = 'Miraflores, Lima'
-LIMIT 1;

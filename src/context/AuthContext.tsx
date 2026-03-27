@@ -9,8 +9,6 @@ interface User {
   roles: string[];
   maxproperties: number;
   phone?: string;
-  address?: string;
-  district?: string;
 }
 
 interface AuthContextType {
@@ -95,7 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isProfileComplete = () => {
     if (!user) return false;
-    return !!(user.firstname && user.lastname && user.phone && user.address && user.district);
+    // Now only requiring name and phone as address/district were removed
+    return !!(user.firstname && user.lastname && user.phone);
   };
 
   return (

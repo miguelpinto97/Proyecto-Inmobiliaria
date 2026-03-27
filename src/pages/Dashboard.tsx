@@ -49,15 +49,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (id: number, status: string) => {
-    if (window.confirm(`¿Estás seguro de que deseas marcar esta propiedad como ${status.toLowerCase()}?`)) {
-      try {
-        await propertyService.update(String(id), { status });
-        fetchData();
-      } catch (err: any) {
-        console.error(err);
-        alert(err.response?.data?.error || `Error al marcar como ${status.toLowerCase()}`);
-      }
+  const handleStatusChange = async (id: number, statusId: number) => {
+    try {
+      await propertyService.updateStatus(id, statusId);
+      fetchData();
+      alert('Estado actualizado');
+    } catch (err) {
+      alert('Error al actualizar estado');
     }
   };
 
