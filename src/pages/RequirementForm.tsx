@@ -9,7 +9,7 @@ const RequirementForm: React.FC = () => {
   const navigate = useNavigate();
   const { values, loading: valuesLoading } = useCommonValues();
   const [isSaving, setIsSaving] = React.useState(false);
-  
+
   const { register, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
       operationType: 'Venta',
@@ -61,10 +61,10 @@ const RequirementForm: React.FC = () => {
             <Target className="text-blue-600" />
             Nueva Búsqueda
           </h1>
-          <p className="text-slate-500 font-bold text-sm">Define lo que buscas y deja que nuestra IA haga el trabajo pesado.</p>
+          <p className="text-slate-500 font-bold text-sm">Define lo que buscas y déjalo en manos de nuestro sistema de matching.</p>
         </div>
       </div>
-      
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* Basic Info Card */}
         <div className="bg-white p-8 md:p-10 rounded-[3rem] border border-slate-100 shadow-xl space-y-10">
@@ -120,19 +120,19 @@ const RequirementForm: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Mín.</span>
-                  <input 
-                    type="number" 
-                    {...register('minPrice')} 
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all" 
+                  <input
+                    type="number"
+                    {...register('minPrice')}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all"
                     placeholder="0"
                   />
                 </div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Máx.</span>
-                  <input 
-                    type="number" 
-                    {...register('maxPrice')} 
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all" 
+                  <input
+                    type="number"
+                    {...register('maxPrice')}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all"
                     placeholder="Sin límite"
                   />
                 </div>
@@ -143,10 +143,10 @@ const RequirementForm: React.FC = () => {
               <label className="text-xs font-black uppercase tracking-widest text-slate-400">Área Mínima (m²)</label>
               <div className="relative">
                 <Ruler className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                <input 
-                  type="number" 
-                  {...register('minArea')} 
-                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all" 
+                <input
+                  type="number"
+                  {...register('minArea')}
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 text-sm transition-all"
                   placeholder="Ej: 60"
                 />
               </div>
@@ -194,16 +194,16 @@ const RequirementForm: React.FC = () => {
           </div>
 
           <div className="flex justify-end gap-4 pt-4">
-            <button 
-              type="button" 
-              onClick={() => navigate('/dashboard')} 
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
               className="px-8 py-4 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 transition-all interactive-icon"
             >
               Descartar
             </button>
-            <button 
-              type="submit" 
-              disabled={isSaving} 
+            <button
+              type="submit"
+              disabled={isSaving}
               className="btn btn-primary px-12 py-4 min-w-[260px] shadow-xl shadow-blue-500/20 text-sm font-black uppercase tracking-widest gap-3"
             >
               {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}

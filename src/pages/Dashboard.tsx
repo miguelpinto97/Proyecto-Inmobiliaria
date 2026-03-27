@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                   <span className="font-bold">Potenciales Matches</span>
                 </div>
                 <p className="text-4xl font-black">Pronto</p>
-                <p className="text-sm text-white/70 mt-2">Algoritmo de IA calculando...</p>
+                <p className="text-sm text-white/70 mt-2">Algoritmo de Matching proximamente...</p>
               </div>
               <TrendingUp className="absolute -right-6 -bottom-6 w-32 h-32 opacity-10 group-hover:scale-110 transition-transform duration-500" />
             </div>
@@ -155,9 +155,9 @@ const Dashboard: React.FC = () => {
               <div className="grid grid-cols-1 gap-4">
                 {properties.map(p => (
                   <div key={p.id}>
-                    <PropertyCard 
-                      property={p} 
-                      showStatus={true} 
+                    <PropertyCard
+                      property={p}
+                      showStatus={true}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onStatusChange={handleStatusChange}
@@ -202,7 +202,7 @@ const Dashboard: React.FC = () => {
                       <span>Min. {r.minarea} m²</span>
                     </div>
                     <button className="w-full mt-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all">
-                      Calcular Matching IA
+                      Calcular Matching
                     </button>
                   </div>
                 ))}
